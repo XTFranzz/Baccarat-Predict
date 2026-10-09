@@ -1,0 +1,16 @@
+{
+  "name": "baccarat-predict",
+  "version": "1.0.0",
+  "description": "Reads a live baccarat table (roadmap and cards), tracks the shoe, predicts the next hand and learns from logged results",
+  "main": "main.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "selftest": "node scripts/start.js --selftest",
+    "bench": "node scripts/start.js --bench",
+    "test": "node test-engine.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.0"
+  }
+}

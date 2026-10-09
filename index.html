@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baccarat Predict</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand">Baccarat Predict</div>
+    <button id="navBack" class="icon" title="Back">&#8592;</button>
+    <button id="navReload" class="icon" title="Reload">&#8635;</button>
+    <button id="btnWatch" title="Read the game from your own browser window">Watch a window</button>
+    <button id="btnFull" title="Leave the side panel and show the full app" hidden>Full view</button>
+    <form id="urlForm" class="url">
+      <input id="urlInput" type="text" placeholder="Game link" autocomplete="off" spellcheck="false">
+      <button type="submit">Open</button>
+    </form>
+  </header>
+
+  <main class="layout">
+    <section class="game" id="gameArea">
+      <webview id="casino" partition="persist:casino" allowpopups src="about:blank"></webview>
+      <video id="shareVideo" class="share" muted playsinline hidden></video>
+
+      <div id="startScreen" class="start">
+        <div class="start-box">
+          <h1>Paste your baccarat game link</h1>
+          <p class="muted">Pragmatic Play, Evolution, Ezugi and similar live tables. Log in and play inside this window as normal.</p>
+          <form id="startForm" class="start-form">
+            <input id="startInput" type="text" placeholder="https://…" autocomplete="off" spellcheck="false">
+            <button type="submit" class="primary">Start</button>
+          </form>
+          <div class="or"><span>or</span></div>
+          <button id="startWatchAgain" class="watch-btn primary-watch" hidden>
+            <b>Watch the same window again</b>
+            <span id="startWatchAgainName"></span>
+          </button>
+          <button id="startWatch" class="watch-btn">
+            <b>Watch my browser instead</b>
+            <span>Use this if the login or captcha fails inside the app. Log in to the casino in Chrome as normal, open the baccarat table, then pick that window here.</span>
+          </button>
+          <ol class="start-steps">
+            <li>The app finds the roadmap by itself and reads every result.</li>
+            <li>The first time cards are on screen after a hand, it asks you to confirm the cards it read. This happens once per site.</li>
+            <li>After that it only shows the prediction, and logs every result to keep learning.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div id="roadFrame" class="frame frame-road" hidden><span id="roadFrameLabel" title="Click to move or resize the roadmap box">Roadmap ✥ move / resize</span></div>
+      <div id="cardFrame" class="frame frame-cards" hidden><span>Cards</span></div>
+
+      <div id="selectOverlay" class="select-overlay" hidden>
+        <div class="select-help">Drag a box around the Bead Plate or Big Road. Press Esc to cancel.</div>
+        <div id="selectBox" class="select-box" hidden></div>
+      </div>
+
+      <div id="adjust" class="adjust" hidden>
+        <div class="adjust-bar">
+          <div>
+            <b class="adjust-title">Put the yellow box over one roadmap</b>
+            <span class="muted small">Drag it to move. Pull a corner to resize. The Big Road shows the whole shoe; the Bead Plate often shows only the latest hands.</span>
+            <div id="adjustRead" class="small"></div>
+          </div>
+          <div class="row">
+            <button id="adjustAuto" class="ghost">Let the app find it</button>
+            <button id="adjustCancel" class="ghost">Cancel</button>
+            <button id="adjustDone" class="primary">Done</button>
+          </div>
+        </div>
+        <div id="adjustBox" class="adjust-box"><span>Roadmap</span><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div>
+      </div>
+
+      <div id="calib" class="calib" hidden>
+        <div class="calib-head">
+          <h3>One-time card setup</h3>
+          <span class="muted small">Check the cards the app read from this hand. Fix any that are wrong, then confirm.</span>
+        </div>
+        <canvas id="calibCanvas" width="640" height="200"></canvas>
+        <div class="calib-sides">
+          <div><div class="side-label p">Player</div><div id="calibP" class="calib-cards"></div></div>
+          <div><div class="side-label b">Banker</div><div id="calibB" class="calib-cards"></div></div>
+        </div>
+        <div id="calibCheck" class="small"></div>
+        <div class="row">
+          <button id="calibSwap" class="ghost">Swap Player and Banker</button>
+          <span class="spacer"></span>
+          <button id="calibLater" class="ghost">Not now</button>
+          <button id="calibOk" class="primary">Confirm cards</button>
+        </div>
+      </div>
+
+      <div id="picker" class="picker" hidden>
+        <div class="picker-head">
+          <div>
+            <h3>Pick the window with the baccarat table</h3>
+            <span class="muted small">Keep that window open and not minimised. It can sit behind other windows.</span>
+          </div>
+          <div class="row">
+            <button id="pickerRefresh" class="ghost">Refresh</button>
+            <button id="pickerClose" class="ghost">Cancel</button>
+          </div>
+        </div>
+        <div id="pickerList" class="picker-list"></div>
+      </div>
+
+    </section>
+
+    <aside class="panel">
+      <section class="card steps">
+        <div class="step" id="stepLink"><i></i><div><b>Game link</b><span>Waiting for the link</span></div></div>
+        <div class="step" id="stepRoad"><i></i><div><b>Roadmap</b><span>Not found yet</span></div>
+          <button id="btnAdjust" class="ghost step-btn" title="Drag and resize the yellow box over the roadmap">Adjust box</button></div>
+        <div class="step" id="stepCards"><i></i><div><b>Cards</b><span>Waiting for a hand to finish</span></div></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3>Next hand</h3><span id="predBadge" class="pill">Waiting</span></div>
+        <div id="prediction"></div>
+        <div id="roadRead" class="road-read"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3 id="shoeTitle">Shoe</h3><span id="countBadge" class="pill">No cards yet</span></div>
+        <div id="boxStatus" class="small box-status"></div>
+        <div id="shoeInfo" class="small muted"></div>
+        <div class="road-label">Bead Plate</div>
+        <canvas id="beadCanvas" class="road" height="90"></canvas>
+        <div class="road-label">Big Road</div>
+        <canvas id="bigCanvas" class="road" height="90"></canvas>
+        <div class="derived">
+          <div><div class="road-label">Big Eye Boy</div><canvas id="bebCanvas" class="road" height="60"></canvas></div>
+          <div><div class="road-label">Small Road</div><canvas id="srCanvas" class="road" height="60"></canvas></div>
+          <div><div class="road-label">Cockroach Pig</div><canvas id="cpCanvas" class="road" height="60"></canvas></div>
+        </div>
+        <div id="askView" class="ask"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3>Statistics</h3><span id="statsBadge" class="pill">0 hands</span></div>
+        <div id="versus"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3>Learning</h3><span id="learnBadge" class="pill">0 hands</span></div>
+        <div id="learning"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h3>Hand log</h3>
+          <select id="logRange" class="small"><option value="20">Last 20</option><option value="shoe">This shoe</option><option value="all">All hands</option></select>
+        </div>
+        <div id="logView" class="log-scroll"></div>
+      </section>
+
+      <details class="card settings" id="settings">
+        <summary><h3>Settings and tools</h3></summary>
+        <div class="row small">
+          <label>Strong lean at
+            <input type="range" id="sureRange" min="0.51" max="0.65" step="0.01" value="0.55">
+            <b id="sureVal">55%</b>
+          </label>
+        </div>
+        <div class="row small">
+          <label>Read every
+            <select id="scanSpeed">
+              <option value="1000" selected>1 s</option>
+              <option value="1500">1.5 s</option>
+              <option value="2500">2.5 s</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="showFrames" checked> Show detection boxes</label>
+        </div>
+        <h4>Roadmap reading</h4>
+        <p id="roadInfo" class="muted small">Not reading a roadmap yet.</p>
+        <div class="row">
+          <button id="btnRefind">Find roadmap again</button>
+          <button id="btnSwitch">Switch road</button>
+          <button id="btnManual">Adjust roadmap box</button>
+        </div>
+        <div class="row">
+          <input id="fixText" type="text" placeholder="Results of this shoe, e.g. BBPBTP" spellcheck="false">
+          <button id="btnFix">Fix results</button>
+        </div>
+        <div class="row">
+          <button id="btnSnap">Save snapshot</button>
+          <span class="muted small">Saves what the reader sees, so a misread can be checked.</span>
+        </div>
+        <div class="row">
+          <button id="btnRecal">Redo card setup</button>
+          <button id="btnExport">Export log (CSV)</button>
+          <button id="btnResetModel" class="ghost">Reset learning</button>
+        </div>
+        <h4>Simulation</h4>
+        <p class="muted small">Deals real 8-deck shoes and tests the pattern methods, to show how often they really win.</p>
+        <div class="row small">
+          <label>Shoes <input id="simShoes" type="number" value="2000" min="100" max="50000" step="100"></label>
+          <button id="btnSim">Run simulation</button>
+        </div>
+        <div id="simProgress" class="progress" hidden><div></div></div>
+        <div id="simResult"></div>
+      </details>
+
+      <p class="disclaimer">Every hand is dealt from a shuffled shoe. The card math is exact, but the house edge stays on almost every hand. A "strong lean" is only the model's best estimate. No hand is ever sure. Bet only what you can afford to lose.</p>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="engine.js"></script>
+  <script src="vision.js"></script>
+  <script src="learner.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

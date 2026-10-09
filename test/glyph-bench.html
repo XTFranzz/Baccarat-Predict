@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<canvas id="c" width="300" height="200"></canvas>
+<script src="../vision.js"></script>
+<script>
+// Card-reading benchmark: draws cards in different fonts/sizes/turns and reads them back.
+const V = RoadVision;
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const c = document.getElementById('c'), ctx = c.getContext('2d', { willReadFrequently: true });
+function drawCard(r, suit, font, scale, sideways) {
+  const W = 56 * scale, H = 80 * scale;
+  ctx.fillStyle = '#1d4b40'; ctx.fillRect(0, 0, 300, 200);
+  ctx.save(); ctx.translate(20, 20);
+  if (sideways) { ctx.translate(H, 0); ctx.rotate(Math.PI / 2); }
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#999';
+  ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 5 * scale); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = suit === '♥' ? '#d01818' : '#111';
+  ctx.font = font.replace('{s}', Math.round(19 * scale)); ctx.textBaseline = 'top';
+  ctx.fillText(r, 5 * scale, 5 * scale);
+  ctx.font = Math.round(15 * scale) + 'px Arial'; ctx.fillText(suit, 6 * scale, 27 * scale);
+  ctx.font = Math.round(30 * scale) + 'px Arial'; ctx.fillText(suit, W / 2 - 9 * scale, H / 2 - 4 * scale);
+  ctx.restore();
+  const img = ctx.getImageData(0, 0, 300, 200);
+  const box = sideways ? { x: 20, y: 20, width: Math.round(H), height: Math.round(W) } : { x: 20, y: 20, width: Math.round(W), height: Math.round(H) };
+  return { img, box };
+}
+window.runBench = function (learnFrom) {
+  const seeds = V.makeSeedTemplates();
+  const fonts = ['bold {s}px Arial', 'bold {s}px Georgia', '{s}px Verdana', 'bold {s}px "Times New Roman"', 'bold {s}px Tahoma'];
+  const res = {};
+  for (const font of fonts) {
+    let tpl = seeds;
+    if (learnFrom) { // learned templates from one confirmed hand: 5,5,10,J,10,A at scale 1
+      const extra = [];
+      for (const r of learnFrom) { const { img, box } = drawCard(r, '♠', font, 1, false); const m = V.readCard(img, box, seeds); if (m) extra.push({ ...m.feat, rank: r }); }
+      tpl = extra.concat(seeds);
+    }
+    let ok = 0, n = 0; const wrong = {};
+    for (const scale of [0.7, 0.85, 1, 1.25, 1.6]) for (const sideways of [false, true]) for (const suit of ['♠', '♥']) for (const r of RANKS) {
+      const { img, box } = drawCard(r, suit, font, scale, sideways);
+      const m = V.readCard(img, box, tpl);
+      n++;
+      if (m && m.rank === r) ok++; else { const k = r + '→' + (m ? m.rank : '?'); wrong[k] = (wrong[k] || 0) + 1; }
+    }
+    res[font.replace('{s}px ', '')] = { acc: +(ok / n * 100).toFixed(1), wrong: Object.entries(wrong).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => e.join(' x')).join(', ') };
+  }
+  return res;
+};
+</script></body></html>

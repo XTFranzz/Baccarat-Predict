@@ -1,0 +1,165 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Fake Live Baccarat</title>
+<style>
+  body { margin: 0; background: #1b1d22; color: #fff; font-family: Arial, sans-serif; }
+  .video { position: relative; height: 330px; background: linear-gradient(135deg, #10302a, #1d4b40); }
+  .video .label { position: absolute; top: 10px; left: 14px; opacity: .6; }
+  #cards { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); }
+  #msg { position: absolute; left: 0; right: 0; top: 260px; text-align: center; font-size: 22px; font-weight: bold; }
+  .bets { display: flex; gap: 12px; padding: 10px 14px; }
+  .bets button { flex: 1; font-size: 18px; padding: 14px; border: 0; border-radius: 8px; color: #fff; }
+  #roads { display: block; margin: 0 14px; background: #fff; }
+  .chat { position: absolute; right: 12px; top: 12px; width: 150px; background: #fff; color: #333; font-size: 11px; padding: 6px; border-radius: 4px; }
+</style></head>
+<body>
+  <div class="video">
+    <div class="label">LIVE DEALER VIDEO</div>
+    <div class="chat">Chat: good luck all!</div>
+    <canvas id="cards" width="560" height="210"></canvas>
+    <div id="msg"></div>
+  </div>
+  <div class="bets"><button style="background:#2a5bd7">PLAYER 1:1</button><button style="background:#2f9a55">TIE 8:1</button><button style="background:#d23a3a">BANKER 0.95:1</button></div>
+  <canvas id="roads" width="980" height="200"></canvas>
+<script src="../engine.js"></script>
+<script>
+  const qs = new URLSearchParams(location.search);
+  const HANDS = +qs.get('hands') || 60;        // hands per shoe before shuffle
+  const CYCLE = +qs.get('cycle') || 4000;      // ms per hand
+  const SHUFFLE_MS = +qs.get('shuffle') || 6000;
+  const START = +qs.get('start') || 0;          // hands already played when you join
+  if (qs.get('zoom')) document.body.style.zoom = qs.get('zoom');   // simulate a small window
+  const rng = Baccarat.mulberry32(+qs.get('seed') || 77);
+  const SUITS = ['♠', '♥', '♦', '♣'];
+  const RANKS = Baccarat.RANKS;
+
+  window.truth = { shoes: [] };
+  let shoe, pos, cur, roadSeq, phase = 'play';
+
+  function newShoe() {
+    const cards = [];
+    for (let d = 0; d < 8; d++) for (const s of SUITS) for (const r of RANKS) cards.push({ r, s });
+    for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+    shoe = cards; pos = 0; roadSeq = [];
+    window.truth.shoes.push({ hands: [] });
+  }
+  function dealHand() {
+    const v = c => Baccarat.rankValue(c.r);
+    const P = [shoe[pos++]], B = [];
+    B.push(shoe[pos++]); P.push(shoe[pos++]); B.push(shoe[pos++]);
+    let p = (v(P[0]) + v(P[1])) % 10, b = (v(B[0]) + v(B[1])) % 10;
+    if (p < 8 && b < 8) {
+      let p3 = -1;
+      if (p <= 5) { const c = shoe[pos++]; P.push(c); p3 = v(c); p = (p + p3) % 10; }
+      if (Baccarat.bankerDraws(b, p3)) { const c = shoe[pos++]; B.push(c); b = (b + v(c)) % 10; }
+    }
+    const result = b > p ? 'B' : p > b ? 'P' : 'T';
+    return { P, B, result, p, b };
+  }
+
+  // ---- drawing ----
+  const cc = document.getElementById('cards').getContext('2d');
+  function drawCard(c, x, y, sideways) {
+    const W = 56, H = 80;
+    cc.save();
+    cc.translate(x, y);
+    if (sideways) { cc.translate(H, 0); cc.rotate(Math.PI / 2); }
+    cc.fillStyle = '#fff'; cc.strokeStyle = '#999'; cc.lineWidth = 1;
+    cc.beginPath(); cc.roundRect(0.5, 0.5, W - 1, H - 1, 5); cc.fill(); cc.stroke();
+    const red = c.s === '♥' || c.s === '♦';
+    cc.fillStyle = red ? '#d01818' : '#111';
+    cc.font = 'bold 19px Arial'; cc.textBaseline = 'top';
+    cc.fillText(c.r, 5, 5);
+    cc.font = '15px Arial'; cc.fillText(c.s, 6, 27);
+    cc.font = '30px Arial'; cc.fillText(c.s, W / 2 - 9, H / 2 - 4);
+    cc.restore();
+  }
+  function drawCards(hand, upto) {
+    cc.clearRect(0, 0, 560, 210);
+    if (!hand) return;
+    cc.font = 'bold 16px Arial'; cc.textBaseline = 'top';
+    cc.fillStyle = '#7fa8ff'; cc.fillText('PLAYER' + (upto >= 99 ? ' ' + hand.p : ''), 40, 0);
+    cc.fillStyle = '#ff8a8a'; cc.fillText('BANKER' + (upto >= 99 ? ' ' + hand.b : ''), 330, 0);
+    const order = [['P', 0], ['B', 0], ['P', 1], ['B', 1], ['P', 2], ['B', 2]];
+    let shown = 0;
+    for (const [side, i] of order) {
+      const c = hand[side][i]; if (!c) continue;
+      if (shown++ >= upto) break;
+      const baseX = side === 'P' ? 40 : 330;
+      if (i < 2) drawCard(c, baseX + i * 64, 28, false);
+      else drawCard(c, baseX + 24, 118, true);
+    }
+  }
+
+  const rc = document.getElementById('roads').getContext('2d');
+  const COL = { B: '#e02020', P: '#1d4fe0', T: '#1a9a3a' };
+  function drawRoads() {
+    rc.fillStyle = '#fff'; rc.fillRect(0, 0, 980, 200);
+    const cell = 24;
+    rc.strokeStyle = '#ddd'; rc.lineWidth = 1;
+    // bead plate (12 columns, scrolls when full); ?bead=0 hides it so only the Big Road can be read
+    if (qs.get('bead') === '0') { rc.save(); rc.globalAlpha = 0; }
+    for (let x = 0; x <= 12 * cell; x += cell) { rc.beginPath(); rc.moveTo(x + .5, 0); rc.lineTo(x + .5, 6 * cell); rc.stroke(); }
+    for (let y = 0; y <= 6 * cell; y += cell) { rc.beginPath(); rc.moveTo(0, y + .5); rc.lineTo(12 * cell, y + .5); rc.stroke(); }
+    const cols = Math.ceil(roadSeq.length / 6), start = Math.max(0, cols - 12) * 6;
+    roadSeq.slice(start).forEach((s, i) => {
+      const x = Math.floor(i / 6) * cell + cell / 2, y = (i % 6) * cell + cell / 2;
+      rc.fillStyle = COL[s]; rc.beginPath(); rc.arc(x, y, 10, 0, Math.PI * 2); rc.fill();
+      rc.fillStyle = '#fff'; rc.font = 'bold 12px Arial'; rc.textAlign = 'center'; rc.textBaseline = 'middle';
+      rc.fillText(s === 'B' ? '庄' : s === 'P' ? '闲' : '和', x, y + 1);
+    });
+    if (qs.get('bead') === '0') rc.restore();
+    // big road (hollow rings), starts after a border
+    const ox = 12 * cell + 14;
+    rc.strokeStyle = '#ddd';
+    for (let x = ox; x <= 980; x += cell / 1) { rc.beginPath(); rc.moveTo(x + .5, 0); rc.lineTo(x + .5, 6 * cell); rc.stroke(); }
+    let col = -1, row = 0, last = null;
+    for (const s of roadSeq) {
+      if (s === 'T') { if (last) { const x = ox + col * cell + cell / 2, y = row * cell + cell / 2; rc.strokeStyle = COL.T; rc.lineWidth = 2; rc.beginPath(); rc.moveTo(x - 7, y + 7); rc.lineTo(x + 7, y - 7); rc.stroke(); } continue; }
+      if (s !== last) { col++; row = 0; } else if (row < 5) row++; else col++;
+      last = s;
+      const x = ox + col * cell + cell / 2, y = row * cell + cell / 2;
+      rc.strokeStyle = COL[s]; rc.lineWidth = 3; rc.beginPath(); rc.arc(x, y, 8.5, 0, Math.PI * 2); rc.stroke();
+    }
+    // a derived road with half-size marks (must be ignored by the reader)
+    const dy = 6 * cell + 8;
+    roadSeq.filter(s => s !== 'T').slice(1).forEach((s, i) => {
+      const x = ox + Math.floor(i / 4) * 12 + 6, y = dy + (i % 4) * 12 + 6;
+      rc.strokeStyle = i % 3 ? COL.B : COL.P; rc.lineWidth = 2; rc.beginPath(); rc.arc(x, y, 4.2, 0, Math.PI * 2); rc.stroke();
+    });
+    rc.textAlign = 'start';
+  }
+
+  // ---- game loop ----
+  function play() {
+    if (window.truth.shoes.at(-1).hands.length >= HANDS) return shuffle();
+    const hand = dealHand();
+    window.truth.current = hand;
+    const shown = { P: hand.P.map(c => c.r), B: hand.B.map(c => c.r), from: Date.now(), to: Date.now() + CYCLE * 0.85 };
+    (window.truth.shown = window.truth.shown || []).push(shown);
+    let k = 0;
+    const steps = setInterval(() => { drawCards(hand, ++k); if (k >= 6) clearInterval(steps); }, CYCLE * 0.06);
+    setTimeout(() => {
+      drawCards(hand, 99);
+      roadSeq.push(hand.result);
+      window.truth.shoes.at(-1).hands.push({ P: hand.P.map(c => c.r), B: hand.B.map(c => c.r), result: hand.result, at: Date.now() });
+      drawRoads();
+    }, CYCLE * 0.4);
+    setTimeout(() => { drawCards(null); window.truth.current = null; }, CYCLE * 0.85);
+    setTimeout(play, CYCLE);
+  }
+  function shuffle() {
+    roadSeq = []; drawRoads(); drawCards(null);
+    document.getElementById('msg').textContent = 'SHUFFLING – NEW SHOE';
+    setTimeout(() => { document.getElementById('msg').textContent = ''; newShoe(); play(); }, SHUFFLE_MS);
+  }
+
+  newShoe();
+  // Pretend you joined mid-shoe: some hands already played.
+  for (let i = 0; i < START; i++) {
+    const h = dealHand(); roadSeq.push(h.result);
+    window.truth.shoes.at(-1).hands.push({ P: h.P.map(c => c.r), B: h.B.map(c => c.r), result: h.result, at: 0, before: true });
+  }
+  drawRoads();
+  setTimeout(play, 800);
+</script>
+</body></html>

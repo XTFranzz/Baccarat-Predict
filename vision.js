@@ -303,6 +303,13 @@
       keep.add(m.id); right = Math.max(right, m.maxX); left = Math.min(left, m.minX);
       top = Math.min(top, m.minY); bottom = Math.max(bottom, m.maxY);
     }
+    if (fromLeft) {
+      // Inside the user's box the whole width is the road: take every mark, so a circle broken by a tie line
+      // (or anything else unusual) can never end the road early.
+      const ms = blobs.filter(b => b.lab !== 3 && b.area >= 2 && b.cy >= sig.y0 - y0 - p * 0.5 && b.cy <= sig.y0 - y0 + p * 5.8);
+      if (ms.length) { left = Math.min(...ms.map(b => b.minX)); right = Math.max(...ms.map(b => b.maxX));
+        top = Math.min(...ms.map(b => b.minY)); bottom = Math.max(...ms.map(b => b.maxY)); ms.forEach(b => keep.add(b.id)); }
+    }
     if (!keep.size) return { seq: [], marks: [], note: 'road is empty', box: null };
     // Clear marks found the road's extent; now count every coloured pixel inside it. Small marks split
     // into pieces by their white letters would otherwise be lost.
@@ -318,7 +325,21 @@
     // centre of the road's first cell, in this crop's coordinates
     const phaseHint = { x: sig.x0 + sig.d / 2 - x0, y: sig.y0 + sig.d / 2 - y0 };
     const res = gridRead(masked, w, h, blobs.filter(b => keep.has(b.id)), p, phaseHint, sig.d);
-    if (sig.kind === 'Big Road') res.seq = decodeBigRoad(res.marks);
+    if (sig.kind === 'Big Road') {
+      for (const m of res.marks) {
+        if (!m.tie) continue;
+        // Look only at the middle of the circle, where the digit is drawn (edges hold the ring, pair dots, anti-aliasing).
+        let dark = 0, n = 0;
+        const mx = (m.maxX - m.minX) * 0.27, my = (m.maxY - m.minY) * 0.27;
+        for (let y = Math.round(m.minY + my); y <= Math.round(m.maxY - my); y++) for (let x = Math.round(m.minX + mx); x <= Math.round(m.maxX - mx); x++) {
+          const q = ((y + y0) * img.width + x + x0) * 4, r = img.data[q], g = img.data[q + 1], b = img.data[q + 2];
+          n++;
+          if (0.299 * r + 0.587 * g + 0.114 * b < 110 && Math.max(r, g, b) - Math.min(r, g, b) < 50) dark++;
+        }
+        if (n && dark >= Math.max(2, n * 0.06)) m.ties = 2; // the digit's dark outline; 3+ ties in a row are rare
+      }
+      res.seq = decodeBigRoad(res.marks);
+    }
     res.marks.forEach(m => { m.minX += x0; m.maxX += x0; m.minY += y0; m.maxY += y0; m.cx += x0; });
     res.box = { x: x0 + left - p * 0.25, y: y0 + top - p * 0.25, width: right - left + p * 0.5, height: bottom - top + p * 0.5 };
     return res;
@@ -334,7 +355,7 @@
     const seq = [];
     // A Tie before the first result of the shoe is a green line in an otherwise empty first cell.
     for (const m of marks) if (m.side === 'T' && !at.has(m.col + ',' + m.row)) seq.push('T');
-    const take = m => { used.add(m); seq.push(m.side); if (m.tie) seq.push('T'); };
+    const take = m => { used.add(m); seq.push(m.side); if (m.tie) for (let k = 0; k < (m.ties || 1); k++) seq.push('T'); };
     for (const c of cols) {
       const head = at.get(c + ',' + minRow);
       if (!head || used.has(head)) continue;
@@ -348,8 +369,7 @@
         break;
       }
     }
-    // anything left over (unusual layouts): append in column order so no result is lost
-    for (const m of marks.filter(m => m.side !== 'T' && !used.has(m)).sort((a, b) => a.col - b.col || a.row - b.row)) take(m);
+    // Marks that fit no run are fragments (a circle split across cells): adding them would invent results, so skip them.
     return seq;
   }
 

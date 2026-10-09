@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#fff">
+<canvas id="c"></canvas>
+<script src="../engine.js"></script>
+<script src="../vision.js"></script>
+<script>
+// Draws shoes as a Pragmatic Play style Big Road (thin rings, white-edged green tie line, tie count number,
+// pair dots) at a given cell size, then reads them back with the app's reader.
+const B = Baccarat, V = RoadVision;
+const COL = { B: '#e53935', P: '#1f6fe5' }, GREEN = '#43a047';
+function layout(seq) {           // standard Big Road placement with dragon tails; ties counted on the last circle
+  const cells = [], occ = new Set(); let col = -1, row = 0, last = null, base = -1, prev = null, turned = false, lead = 0;
+  for (const x of seq) {
+    if (x === 'T') { if (prev) prev.ties++; else lead++; continue; }
+    if (x !== last) { base++; col = base; row = 0; turned = false; while (occ.has(col + ',' + row)) { base++; col = base; } }
+    else if (!turned && row < 5 && !occ.has(col + ',' + (row + 1))) row++; else { col++; turned = true; }
+    occ.add(col + ',' + row); prev = { side: x, col, row, ties: cells.length ? 0 : lead }; cells.push(prev); last = x;
+  }
+  return cells;
+}
+function draw(seq, s, rng) {
+  const cells = layout(seq), cols = Math.max(...cells.map(c => c.col)) + 3;
+  const c = document.getElementById('c'); c.width = Math.ceil(cols * s) + 4; c.height = Math.ceil(6 * s) + 4;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = '#e6e6e6'; g.lineWidth = 1;
+  for (let i = 0; i <= cols; i++) { g.beginPath(); g.moveTo(2 + i * s + .5, 2); g.lineTo(2 + i * s + .5, 2 + 6 * s); g.stroke(); }
+  for (let j = 0; j <= 6; j++) { g.beginPath(); g.moveTo(2, 2 + j * s + .5); g.lineTo(2 + cols * s, 2 + j * s + .5); g.stroke(); }
+  for (const m of cells) {
+    const cx = 2 + m.col * s + s / 2, cy = 2 + m.row * s + s / 2, r = s * 0.36;
+    g.strokeStyle = COL[m.side]; g.lineWidth = Math.max(1.2, s * 0.12);
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
+    if (m.ties) {
+      const d = r * 0.95;
+      g.lineCap = 'round';
+      g.strokeStyle = '#fff'; g.lineWidth = Math.max(2, s * 0.24); g.beginPath(); g.moveTo(cx - d, cy + d); g.lineTo(cx + d, cy - d); g.stroke();
+      g.strokeStyle = GREEN; g.lineWidth = Math.max(1, s * 0.13); g.beginPath(); g.moveTo(cx - d, cy + d); g.lineTo(cx + d, cy - d); g.stroke();
+      if (m.ties > 1) {
+        g.font = `bold ${Math.round(s * 0.62)}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.lineWidth = Math.max(1.5, s * 0.14); g.strokeStyle = '#222'; g.strokeText(String(m.ties), cx, cy + 0.5);
+        g.fillStyle = '#fff'; g.fillText(String(m.ties), cx, cy + 0.5);
+      }
+    }
+    // pair dots
+    if (rng() < 0.07) { g.fillStyle = COL.B; g.strokeStyle = '#fff'; g.lineWidth = 1; g.beginPath(); g.arc(cx - r * 0.75, cy - r * 0.75, s * 0.13, 0, 7); g.fill(); g.stroke(); }
+    if (rng() < 0.07) { g.fillStyle = COL.P; g.strokeStyle = '#fff'; g.lineWidth = 1; g.beginPath(); g.arc(cx + r * 0.75, cy + r * 0.75, s * 0.13, 0, 7); g.fill(); g.stroke(); }
+  }
+  return g.getImageData(0, 0, c.width, c.height);
+}
+window.runPragmatic = function (sizes, shoes) {
+  const rng = B.mulberry32(5), out = {};
+  for (const s of sizes) {
+    let exact = 0, tiesTrue = 0, tiesRead = 0, multi = 0, results = 0, wrong = [];
+    for (let k = 0; k < shoes; k++) {
+      const full = B.dealShoe(rng).slice(0, 45 + Math.floor(rng() * 20));
+      const img = draw(full, s, rng);
+      const sig = V.findRoad(img);
+      const read = sig ? V.readRoadLive(img, sig, true).seq : [];
+      tiesTrue += full.filter(x => x === 'T').length; tiesRead += read.filter(x => x === 'T').length;
+      results += full.length;
+      if (read.join('') === full.join('')) exact++; else if (wrong.length < 2) wrong.push({ truth: full.join(''), read: read.join('') });
+    }
+    out[s] = { shoesExact: `${exact}/${shoes}`, ties: `${tiesRead} read of ${tiesTrue}`, wrong };
+  }
+  return out;
+};
+</script></body></html>

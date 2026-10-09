@@ -349,8 +349,11 @@
   function finishRoad(res) {
     // Very small marks (a small or zoomed-out window) are easy to misread: warn instead of guessing quietly.
     const tiny = S.sig.d < 5;
-    setStep('Road', tiny ? 'busy' : 'ok', tiny
+    // Big Road tie lines are thin: below about 11 px per cell some ties can be missed.
+    const smallTies = !tiny && S.sig.kind === 'Big Road' && S.sig.pitch < 11;
+    setStep('Road', tiny || smallTies ? 'busy' : 'ok', tiny
       ? `Reading the ${S.sig.kind}, but it is very small on screen. Make the casino window bigger (or full screen) for accurate reading.`
+      : smallTies ? `Reading the Big Road${site().roadBox ? ' inside your box' : ''}, but it is small (${S.sig.pitch.toFixed(0)} px per cell), so some Ties can be missed. Make the casino window bigger.`
       : `Reading the ${S.sig.kind}${site().roadBox ? ' inside your box' : ''}`);
     if (tiny && !S.tinyWarned) { S.tinyWarned = true; toast('The roadmap is very small. Make the casino window bigger for accurate reading.'); }
     if (!tiny) S.tinyWarned = false;

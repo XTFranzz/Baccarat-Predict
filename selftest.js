@@ -22,6 +22,13 @@ module.exports = async function selftest(win) {
   try {
     await new Promise(r => win.webContents.once('did-finish-load', r));
     await until('app ready', () => js('!!(window.__bp && window.__bp.ready)'), 15000);
+    if (process.env.BP_SYNCTEST) {
+      await js('window.confirm = () => true; true');
+      await js(`document.getElementById('${process.env.BP_SYNCTEST === 'export' ? 'btnLearnExport' : 'btnLearnImport'}').click(); true`);
+      await wait(1500);
+      log('sync', process.env.BP_SYNCTEST, await js('JSON.stringify({ log: window.__bp.S.log.length, modelN: window.__bp.S.model.n, toast: document.getElementById("toast").innerText })'));
+      app.quit(); return;
+    }
     if (process.env.BP_SHOTLOG) {
       await js(`document.getElementById('logView').scrollIntoView(); true`);
       await wait(500); await shot('logsummary'); app.quit(); return;

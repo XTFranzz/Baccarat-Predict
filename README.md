@@ -46,6 +46,8 @@ npm start
 - **Odds.** Before each hand, the app deals the remaining cards 80,000 times to get the true Banker, Player, and Tie chances.
 - **Learning.** A logistic model starts exactly at the card math, with every pattern signal at zero. After each result it adjusts slightly toward whatever actually predicted it. The signals are the last winner, streaks, ping-pong, hot side, Big Road columns, and the derived roads. A pull back toward the math stops it chasing lucky runs. If patterns carry no signal, as the simulation shows for real shoes, their weights stay near zero.
 
+**Using it on another computer.** Cloning the repo gives the code only. To bring what the app has learned, press **Export learning data** (Settings and tools). This writes `learning-data/baccarat-learning.json` into the project folder. Commit and push it, pull on the other computer, and press **Import learning data** there. Hands are merged without duplicates, and the model that has learned from more live hands is kept.
+
 Everything is saved in the app's data folder: the hand log, the learned model, settings, and each site's card setup.
 
 ## Settings and tools

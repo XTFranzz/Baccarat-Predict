@@ -122,6 +122,18 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('shell:open', (_e, p) => shell.openPath(p));
 
+  // Learning data shared through the project folder (so it can go to GitHub and onto another computer).
+  const learningFile = path.join(__dirname, 'learning-data', 'baccarat-learning.json');
+  ipcMain.handle('learning:export', (_e, data) => {
+    fs.mkdirSync(path.dirname(learningFile), { recursive: true });
+    fs.writeFileSync(learningFile, JSON.stringify(data, null, 1));
+    return learningFile;
+  });
+  ipcMain.handle('learning:import', () => {
+    try { return { file: learningFile, data: JSON.parse(fs.readFileSync(learningFile, 'utf8')) }; }
+    catch { return { file: learningFile, data: null }; }
+  });
+
   // ---- Watch-a-window mode: read the casino from the user's own browser window ----
   let chosenSource = null;
   ipcMain.handle('sources:list', async () => {

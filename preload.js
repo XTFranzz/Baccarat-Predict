@@ -12,4 +12,6 @@ contextBridge.exposeInMainWorld('bridge', {
   workArea: () => ipcRenderer.invoke('screen:workArea'),
   saveSnapshot: data => ipcRenderer.invoke('snapshot:save', data),
   openPath: p => ipcRenderer.invoke('shell:open', p),
+  exportLearning: data => ipcRenderer.invoke('learning:export', data),
+  importLearning: () => ipcRenderer.invoke('learning:import'),
 });

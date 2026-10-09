@@ -1276,6 +1276,29 @@
     S.model = L.createModel(null);
     computePrediction(); renderAll(); scheduleSave();
   };
+  // ---- move the learning to another computer (through the project folder / GitHub)
+  $('btnLearnExport').onclick = async () => {
+    const file = await bridge.exportLearning({ version: 2, exportedAt: new Date().toISOString(),
+      log: S.log, model: S.model, sites: S.sites, settings: { sure: S.settings.sure, lastSource: S.settings.lastSource } });
+    toast(`Exported ${S.log.length} hands and the learned model. Now push the project to GitHub.`);
+    console.log('learning exported to', file);
+  };
+  $('btnLearnImport').onclick = async () => {
+    const { file, data } = await bridge.importLearning();
+    if (!data || !Array.isArray(data.log)) return toast('No learning data found. Export it on the other computer, push, then pull here.');
+    if (!confirm(`Import ${data.log.length} hands and the learned model (${data.model ? data.model.n : 0} live hands learned)?`)) return;
+    // Merge hands (no duplicates); keep whichever model has learned from more live hands.
+    const key = e => `${e.t}|${e.shoe}|${e.hand}|${e.result}`;
+    const have = new Set(S.log.map(key));
+    const added = data.log.filter(e => !have.has(key(e)));
+    S.log = S.log.concat(added).sort((a, b) => a.t - b.t);
+    if (data.model && (data.model.n || 0) >= (S.model.n || 0)) S.model = L.createModel(data.model);
+    for (const [host, cfg] of Object.entries(data.sites || {})) if (!S.sites[host]) S.sites[host] = cfg;
+    if (data.settings && data.settings.lastSource && !S.settings.lastSource) S.settings.lastSource = data.settings.lastSource;
+    computePrediction(); renderAll(); await saveNow();
+    toast(`Imported ${added.length} new hands and the learned model.`);
+  };
+
   $('btnExport').onclick = () => {
     const head = 'time,site,shoe,hand,predicted,confidence,strong_lean,math_banker,roadmap_pick,roadmap_reason,result,outcome,player_cards,banker_cards';
     const rows = S.log.map(e => [new Date(e.t).toISOString(), e.site, e.shoe, e.hand, e.pred ? e.pred.side : '', e.pred ? e.pred.conf : '',

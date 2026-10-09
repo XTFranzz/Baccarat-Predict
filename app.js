@@ -1160,16 +1160,17 @@
   // Lays out a sequence like the Big Road: same symbol goes down, a change starts a new column, long runs turn right.
   function bigRoadCells(h) {
     const cells = [], occ = new Set();
-    let col = -1, row = 0, last = null, baseCol = -1, prev = null, turned = false;
+    let col = -1, row = 0, last = null, baseCol = -1, prev = null, turned = false, leadingTies = 0;
     for (const x of h) {
-      if (x === 'T') { if (prev) prev.ties++; continue; }
+      // Ties are drawn as a green line through the previous circle (Ties before any result go on the first circle).
+      if (x === 'T') { if (prev) prev.ties++; else leadingTies++; continue; }
       if (x !== last) {
         baseCol++; col = baseCol; row = 0; turned = false;
         while (occ.has(col + ',' + row)) { baseCol++; col = baseCol; }
       } else if (!turned && row < 5 && !occ.has(col + ',' + (row + 1))) row++;
       else { col++; turned = true; }
       occ.add(col + ',' + row);
-      prev = { side: x, col, row, ties: 0 }; cells.push(prev); last = x;
+      prev = { side: x, col, row, ties: cells.length ? 0 : leadingTies }; cells.push(prev); last = x;
     }
     return cells;
   }
@@ -1182,7 +1183,11 @@
       const cx = (c.col - start) * cell + cell / 2, cy = c.row * cell + cell / 2;
       ctx.strokeStyle = COLORS[c.side]; ctx.lineWidth = Math.max(1.5, cell * 0.14);
       ctx.beginPath(); ctx.arc(cx, cy, cell * 0.34, 0, Math.PI * 2); ctx.stroke();
-      if (c.ties) { ctx.strokeStyle = COLORS.T; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - cell * .35, cy + cell * .35); ctx.lineTo(cx + cell * .35, cy - cell * .35); ctx.stroke(); }
+      if (c.ties) {
+        ctx.strokeStyle = COLORS.T; ctx.lineWidth = Math.max(2, cell * 0.16); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cx - cell * .36, cy + cell * .36); ctx.lineTo(cx + cell * .36, cy - cell * .36); ctx.stroke();
+        if (c.ties > 1) { ctx.fillStyle = COLORS.T; ctx.font = `bold ${Math.round(cell * 0.45)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(c.ties, cx + cell * 0.3, cy + cell * 0.3); }
+      }
     }
   }
 

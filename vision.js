@@ -138,6 +138,7 @@
   }
 
   // Grid-based reading of labelled marks: every coloured pixel votes for its cell; cells read column by column.
+  let TIE_FRAC = 0.05; // tested on real Big Road screenshots: no false ties down to 0.015
   function gridRead(labels, w, h, blobs, pitchHint, phaseHint, diamHint) {
     blobs = blobs.filter(b => b.area >= 2);
     if (!blobs.length) return { seq: [], marks: [], pitch: pitchHint || 0, note: 'no red, blue or green marks found' };
@@ -190,8 +191,10 @@
       const side = rb >= typArea * 0.3 ? (c.area[1] >= c.area[2] ? 'B' : 'P') : 'T';
       seq.push(side);
       // a green slash drawn over a Big Road circle is a tie after that hand
-      if (side !== 'T' && c.area[3] >= typArea * 0.15) seq.push('T');
-      marks.push({ side, col: c.col, row: c.row, tie: side !== 'T' && c.area[3] >= typArea * 0.15,
+      // A green Tie line drawn through a Big Road circle: a thin line, so a small share of the mark is enough.
+      const tie = side !== 'T' && c.area[3] >= Math.max(3, typArea * TIE_FRAC);
+      if (tie) seq.push('T');
+      marks.push({ side, col: c.col, row: c.row, tie,
         cx: (c.minX + c.maxX) / 2, minX: c.minX, minY: c.minY, maxX: c.maxX, maxY: c.maxY,
         w: c.maxX - c.minX + 1, h: c.maxY - c.minY + 1 });
     }
@@ -329,6 +332,8 @@
     const cols = [...new Set(marks.map(m => m.col))].sort((a, b) => a - b);
     const minRow = Math.min(...marks.map(m => m.row));
     const seq = [];
+    // A Tie before the first result of the shoe is a green line in an otherwise empty first cell.
+    for (const m of marks) if (m.side === 'T' && !at.has(m.col + ',' + m.row)) seq.push('T');
     const take = m => { used.add(m); seq.push(m.side); if (m.tie) seq.push('T'); };
     for (const c of cols) {
       const head = at.get(c + ',' + minRow);
@@ -513,7 +518,7 @@
     return out;
   }
 
-  root.RoadVision = { decodeBigRoad, makeSeedTemplates, classify, components, readRoad, gridRead, findRoad, readRoadLive, findCards,
+  root.RoadVision = { setTieFrac: f => { TIE_FRAC = f; }, decodeBigRoad, makeSeedTemplates, classify, components, readRoad, gridRead, findRoad, readRoadLive, findCards,
     glyphFeature, matchGlyph, readCard, uprightAccessor, glyphDistance, autocorr, estimatePitch, labelImage };
   if (typeof module !== 'undefined') module.exports = root.RoadVision;
 })(typeof window !== 'undefined' ? window : globalThis);

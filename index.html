@@ -158,6 +158,14 @@
       <details class="card settings" id="settings">
         <summary><h3>Settings and tools</h3></summary>
         <div class="row small">
+          <label>Main pick
+            <select id="headlinePick">
+              <option value="roadmap">Roadmap pattern (follows the roadmap)</option>
+              <option value="model">Model (math, mostly Banker)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row small">
           <label>Strong lean at
             <input type="range" id="sureRange" min="0.51" max="0.65" step="0.01" value="0.55">
             <b id="sureVal">55%</b>

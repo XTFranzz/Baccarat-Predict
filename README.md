@@ -31,6 +31,7 @@ npm start
 ## What you see
 
 - **Setup steps.** Game link, roadmap, and cards, each with a status light.
+- **Main pick.** By default the Roadmap pattern (it follows streaks, ping-pong and column patterns, so it changes between Banker and Player); switch to the Model in Settings and tools. The other pick is always shown underneath.
 - **Next hand.** The model's predicted side, how likely it is to win, and whether it clears your strong-lean level. Nothing is ever sure. It also shows the expected return of each bet from the cards left in the shoe, and flags the rare hands where a bet has a positive edge.
 - **Roadmap read.** A separate Roadmap pick, which rides streaks, follows ping-pong, repeats Big Road column patterns, or follows the derived roads, with the reason. It also shows the current streak or ping-pong and how often a run that long really continued in simulated shoes.
 - **Statistics.** The model pick and the Roadmap pick side by side: picks, won, lost, win rate, last 20, and current run, plus a chart of each one's running win rate against the 50% coin-flip line.

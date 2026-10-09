@@ -88,7 +88,10 @@ module.exports = async function selftest(win) {
       log('box status:', await js("document.getElementById('boxStatus').innerText"));
       log('box saved under:', await js("JSON.stringify({ host: window.__bp.S.host, sites: Object.keys(window.__bp.S.sites), box: !!window.__bp.site().roadBox })"));
       log('box marks:', await js("JSON.stringify(window.__bp.S.lastRead && window.__bp.S.lastRead.marks.map(m => m.col + ',' + m.row + m.side))"));
-      if (process.env.BP_QUICK) { app.quit(); return; }
+      if (process.env.BP_QUICK) {
+        await js(`document.getElementById('prediction').scrollIntoView(); true`); await wait(400); await shot('quick-prediction');
+        app.quit(); return;
+      }
     }
 
     // 1. Joined mid-shoe: roadmap found automatically and history read

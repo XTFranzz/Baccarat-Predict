@@ -20,7 +20,7 @@
     history: [], maxVisible: 0, emptyScans: 0, possibleShuffle: false, joined: false,
     shoe: null,
     cards: { lastKey: null, streak: 0, stable: null, attachedKey: null, calibOpen: false, calibStreak: 0, snoozeUntil: 0, last: null, box: null, epoch: 0, present: false },
-    model: L.createModel(null), log: [], settings: { sure: 0.55, interval: 1000, frames: true },
+    model: L.createModel(null), log: [], settings: { sure: 0.55, interval: 1000, frames: true, headline: 'roadmap' },
     pending: null,
     timer: null, scanning: false, debug: [], events: [],
   };
@@ -887,13 +887,27 @@
       badge.textContent = 'Waiting'; badge.className = 'pill';
       return;
     }
-    badge.textContent = p.sure ? 'STRONG LEAN' : 'Lean only';
-    badge.className = 'pill ' + (p.sure ? 'sure' : '');
+    // Main pick: the Roadmap pattern (default) or the Model. The other is shown underneath.
+    const rp = p.road && p.road.side ? p.road : null;
+    const useRoad = S.settings.headline !== 'model' && rp;
+    const side = useRoad ? rp.side : p.side;
+    const winChance = side === 'B' ? p.mathQ : 1 - p.mathQ; // true chance from the cards / standard odds
+    if (useRoad) { badge.textContent = 'Roadmap pattern'; badge.className = 'pill'; }
+    else { badge.textContent = p.sure ? 'STRONG LEAN' : 'Lean only'; badge.className = 'pill ' + (p.sure ? 'sure' : ''); }
     const usingCards = S.shoe && S.shoe.cardsSeen > 0;
     const evCell = s => `<div><span>${NAMES[s]}</span><b class="${p.ev[s] > 0 ? 'pos' : 'neg'}">${signPct(p.ev[s])}</b></div>`;
     const plusEv = ['B', 'P', 'T'].filter(s => p.ev[s] > 0);
     el.innerHTML = `
-      <div class="big ${p.sure ? 'sure' : ''}">
+      ${useRoad ? `<div class="big">
+        <div class="side-chip ${side}">${side}</div>
+        <div>
+          <div class="title">${NAMES[side]}</div>
+          <div class="muted small">${rp.reason}.</div>
+          <div class="muted small">Real chance to beat ${NAMES[side === 'B' ? 'P' : 'B']} if not a tie: ${pct(winChance)}. Patterns do not change the odds.</div>
+        </div>
+      </div>
+      <div class="note">Model (math) says <b>${NAMES[p.side]}</b> ${pct(p.conf)}. Switch the main pick in Settings and tools.</div>`
+      : `<div class="big ${p.sure ? 'sure' : ''}">
         <div class="side-chip ${p.side}">${p.side}</div>
         <div>
           <div class="title">${NAMES[p.side]}</div>
@@ -901,6 +915,7 @@
           ${p.sure ? 'Above your strong-lean level, but never guaranteed.' : `Below your strong-lean level of ${pct(S.settings.sure, 0)}.`}</div>
         </div>
       </div>
+      ${rp ? `<div class="note">Roadmap pattern says <b>${NAMES[rp.side]}</b>: ${rp.reason}.</div>` : ''}`}
       <div class="bars">
         ${['B', 'P', 'T'].map(s => `<div class="bar"><span>${NAMES[s]}</span>
           <div class="track"><div class="fill" style="width:${(p.probs[s] * 100 / 0.6).toFixed(1)}%;background:${COLORS[s]}"></div></div>
@@ -912,7 +927,7 @@
         : 'No bet has a positive edge this hand. Banker loses the least.'}
         Card math alone says Banker ${pct(p.mathQ)} vs Player ${pct(1 - p.mathQ)}.</div>
       <div class="note">${p.proven ? `Learned patterns are in use: they predicted your last ${p.proofN} live hands better than the plain math.`
-        : `Learned patterns are not used yet: they must first beat the plain math over at least 100 live hands (${p.proofN} so far). Until then the pick follows the math.`}</div>`;
+        : `Learned patterns are not used yet: they must first beat the plain math over at least 100 live hands (${p.proofN} so far). Until then the Model pick follows the math.`}</div>`;
   }
 
   // Roadmap read: the patterns on screen now, with how often each one really continues.
@@ -1217,6 +1232,7 @@
     if (S.pending) { computePrediction(); renderPrediction(); }
     scheduleSave();
   };
+  $('headlinePick').onchange = e => { S.settings.headline = e.target.value; renderPrediction(); scheduleSave(); };
   $('scanSpeed').onchange = e => { S.settings.interval = +e.target.value; if (S.timer) startLoop(); scheduleSave(); };
   $('showFrames').onchange = e => { S.settings.frames = e.target.checked; drawFrames(); scheduleSave(); };
   $('btnRefind').onclick = () => { delete site().roadBox; S.sig = null; S.roadChoice = 0; scheduleSave(); toast('Looking for the roadmap again…'); };
@@ -1349,6 +1365,7 @@
     await loadAll();
     S.seeds = makeSeeds();
     $('sureRange').value = S.settings.sure; $('sureVal').textContent = pct(S.settings.sure, 0);
+    $('headlinePick').value = S.settings.headline || 'roadmap';
     $('scanSpeed').value = String(S.settings.interval);
     $('showFrames').checked = S.settings.frames;
     if (S.lastUrl) $('startInput').value = S.lastUrl;

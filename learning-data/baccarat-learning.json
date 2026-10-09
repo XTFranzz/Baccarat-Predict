@@ -1,0 +1,2958 @@
+{
+ "version": 2,
+ "exportedAt": "2026-10-09T20:47:07.475Z",
+ "log": [
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 1,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 2,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 3,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 4,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 5,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 6,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 7,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 8,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 9,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 10,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 11,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 12,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 13,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 14,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 15,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 16,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 17,
+   "result": "T",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 18,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 19,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 20,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 21,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 22,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 23,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 24,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 25,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 26,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 27,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 28,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 29,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 30,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 31,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 32,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 33,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 34,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 35,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 36,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 37,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 38,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 39,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 40,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 41,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 42,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 43,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 44,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 45,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 46,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 47,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 48,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 49,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 50,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 51,
+   "result": "T",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 52,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 53,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 54,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 55,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 56,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 57,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 58,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 59,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 60,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 61,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 62,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 63,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 64,
+   "result": "B",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575268240,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 65,
+   "result": "P",
+   "cards": null,
+   "pred": null,
+   "road": null,
+   "replay": true,
+   "joined": true
+  },
+  {
+   "t": 1791575282345,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 66,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5068
+   },
+   "road": {
+    "side": "B",
+    "reason": "Ping-pong of 3: follow the chop"
+   },
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575300342,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 1,
+   "hand": 67,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5074
+   },
+   "road": {
+    "side": "P",
+    "reason": "Ping-pong of 4: follow the chop"
+   },
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791575357365,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 1,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5068
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791575357383,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 2,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5083
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791575357401,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 3,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5084
+   },
+   "road": {
+    "side": "P",
+    "reason": "No clear pattern: follow the last winner"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791575357419,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 4,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5048
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357441,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 5,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5049
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791575357466,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 6,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.505
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357487,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 7,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.505
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357511,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 8,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.505
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357527,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 9,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5049
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 6: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357542,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 10,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 7: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357563,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 11,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 8: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357582,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 12,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 9: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357604,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 13,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 10: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357622,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 14,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 11: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357637,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 15,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 12: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357653,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 16,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 13: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357677,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 17,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 14: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357693,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 18,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 15: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357705,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 19,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 16: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357720,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 20,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 17: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357743,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 21,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 18: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357756,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 22,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 19: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357770,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 23,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 20: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357781,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 24,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 21: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575357797,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 2,
+   "hand": 25,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5051
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 22: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575402344,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 3,
+   "hand": 28,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5047
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791575439641,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 3,
+   "hand": 29,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.508
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575456353,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 1,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5068
+   },
+   "road": null,
+   "replay": true,
+   "correct": true
+  },
+  {
+   "t": 1791575631650,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 2,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5085
+   },
+   "road": null,
+   "replay": true,
+   "correct": true
+  },
+  {
+   "t": 1791575631659,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 3,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5085
+   },
+   "road": {
+    "side": "B",
+    "reason": "No clear pattern: follow the last winner"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575631665,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 4,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5084
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575631673,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 5,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5083
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791575631680,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 6,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5082
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791575631690,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 7,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5132
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791575631696,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 8,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5132
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791575631706,
+   "epoch": 0,
+   "site": "window",
+   "shoe": 4,
+   "hand": 9,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5074
+   },
+   "road": {
+    "side": "P",
+    "reason": "Ping-pong of 3: follow the chop"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577732355,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 5,
+   "hand": 55,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5078
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577756351,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 5,
+   "hand": 56,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5131
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577779053,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 5,
+   "hand": 57,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5098
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577827197,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 1,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5086
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827217,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 2,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5099
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827235,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 3,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.51
+   },
+   "road": {
+    "side": "P",
+    "reason": "No clear pattern: follow the last winner"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827251,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 4,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5101
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827268,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 5,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5103
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827286,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 6,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5104
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827314,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 7,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5105
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 6: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827344,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 8,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5105
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 7: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791577827365,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 9,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5048
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577827391,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 10,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5048
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577827411,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 11,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5049
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791577827430,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 12,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5116
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791577827455,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 13,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5045
+   },
+   "road": {
+    "side": "P",
+    "reason": "Ping-pong of 3: follow the chop"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791577827470,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 14,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5044
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791577827510,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 15,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5124
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827531,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 16,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5125
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827548,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 17,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5126
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827564,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 18,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5126
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827583,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 19,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5121
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827613,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 20,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.512
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 6: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827639,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 21,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5114
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 7: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827658,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 22,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5114
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 8: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577827676,
+   "epoch": 8,
+   "site": "window",
+   "shoe": 6,
+   "hand": 23,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5112
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 9: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577836200,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 1,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5086
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791577836221,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 2,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5099
+   },
+   "road": null,
+   "replay": true,
+   "correct": false
+  },
+  {
+   "t": 1791577836237,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 3,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.51
+   },
+   "road": {
+    "side": "P",
+    "reason": "No clear pattern: follow the last winner"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577836251,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 4,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5101
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 3: ride the streak"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836266,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 5,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5101
+   },
+   "road": {
+    "side": "P",
+    "reason": "Player streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791577836280,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 6,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5046
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836300,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 7,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5046
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577836322,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 8,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.505
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836340,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 9,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.505
+   },
+   "road": {
+    "side": "B",
+    "reason": "Derived roads stay red if Banker wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577836355,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 10,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5055
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577836371,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 11,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5054
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836389,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 12,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5054
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577836413,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 13,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5053
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791577836427,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 14,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5122
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836457,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 15,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5122
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": true
+  },
+  {
+   "t": 1791577836476,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 16,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5054
+   },
+   "road": {
+    "side": "P",
+    "reason": "Ping-pong of 3: follow the chop"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  },
+  {
+   "t": 1791577836492,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 17,
+   "result": "T",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5122
+   },
+   "road": {
+    "side": "B",
+    "reason": "Ping-pong of 4: follow the chop"
+   },
+   "replay": true
+  },
+  {
+   "t": 1791577836508,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 7,
+   "hand": 18,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5122
+   },
+   "road": {
+    "side": "B",
+    "reason": "Ping-pong of 4: follow the chop"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845206,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 1,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5086
+   },
+   "road": null,
+   "replay": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845225,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 2,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5072
+   },
+   "road": null,
+   "replay": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845242,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 3,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5071
+   },
+   "road": {
+    "side": "B",
+    "reason": "No clear pattern: follow the last winner"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845256,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 4,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.507
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 3: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845271,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 5,
+   "result": "B",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5068
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 4: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": true
+  },
+  {
+   "t": 1791577845289,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 6,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5067
+   },
+   "road": {
+    "side": "B",
+    "reason": "Banker streak of 5: ride the streak"
+   },
+   "replay": true,
+   "roadCorrect": false,
+   "correct": false
+  },
+  {
+   "t": 1791577845307,
+   "epoch": 9,
+   "site": "window",
+   "shoe": 8,
+   "hand": 7,
+   "result": "P",
+   "cards": null,
+   "pred": {
+    "side": "B",
+    "q": 0.5068,
+    "mathQ": 0.5068,
+    "sure": false,
+    "conf": 0.5068,
+    "modelQ": 0.5123
+   },
+   "road": {
+    "side": "P",
+    "reason": "Derived roads stay red if Player wins"
+   },
+   "replay": true,
+   "roadCorrect": true,
+   "correct": false
+  }
+ ],
+ "model": {
+  "w": [
+   0.006918150259081585,
+   1.0001888600946514,
+   -0.00921351521853835,
+   -0.0032568676395699062,
+   0.009505881478615735,
+   0.004509640419319611,
+   -0.0002235228365561311,
+   -0.0013990874144882513
+  ],
+  "n": 35
+ },
+ "sites": {
+  "local": {},
+  "www.casinoplus.com.ph": {},
+  "www.playtime.ph": {},
+  "www.ptgaming.ph": {},
+  "www.google.com": {},
+  "window": {
+   "roadBox": {
+    "fx": 0.739770408311344,
+    "fy": 0.7710859386658792,
+    "fw": 0.24511839746945313,
+    "fh": 0.11096913835331321
+   }
+  }
+ },
+ "settings": {
+  "sure": 0.55,
+  "lastSource": "Pragmatic Play - Google Chrome"
+ }
+}

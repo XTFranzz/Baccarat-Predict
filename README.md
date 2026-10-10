@@ -42,7 +42,7 @@ npm start
 
 - **Roadmap.** The app looks for a grid of same-size red and blue marks and prefers the Bead Plate. It reads new results as they appear, follows the roadmap when it scrolls, and treats an emptied roadmap as a shuffle.
 - **New shoe.** After a shuffle the card count restarts. If you join mid-shoe, the count uses only the cards seen since you joined, which is still correct, and becomes complete from the next shuffle.
-- **Cards.** The app finds the white card faces and reads the rank in each corner. Every hand is checked against the official drawing rules. If a reading breaks the rules, the app tries the next-closest ranks to find the legal hand that matches the roadmap winner.
+- **Cards.** The app finds the white card faces and reads the rank in each corner. Use **Adjust card box** to move or resize the green detection region over both hands; the saved box is specific to the current site. Every hand is checked against the official drawing rules. If a reading breaks the rules, the app tries the next-closest ranks to find the legal hand that matches the roadmap winner.
 - **Odds.** The app enumerates the legal next-hand draws without replacement from the tracked card-value counts and calculates Banker, Player, and Tie probabilities exactly. Before any cards are tracked it uses standard 8-deck odds. After joining mid-shoe, cards dealt before joining are unknown, so the calculation is exact for the tracked counts but the shoe composition is partial until the next shuffle.
 - **Learning.** A logistic model updates after each eligible live non-tie result using card odds, the last winner, streak, ping-pong, recent side frequency, Big Road columns, and derived roads. It is experimental: roadmap patterns may have no predictive signal, and results do not promise improved accuracy or profit.
 
@@ -52,7 +52,7 @@ Everything is saved in the app's data folder: the hand log, the learned model, s
 
 ## Settings and tools
 
-Open **Settings and tools** at the bottom of the panel to change the strong-lean level or the reading speed. It also has buttons to find the roadmap again, draw the roadmap box by hand, redo the card setup, export the log as CSV, reset learning, and run the pattern simulation.
+Open **Settings and tools** at the bottom of the panel to change the strong-lean level or the reading speed. It also has buttons to find the roadmap again, draw the roadmap box by hand, redo the card setup, export the log as CSV, reset learning, and run the pattern simulation. The **Adjust card box** button under Cards moves and resizes the card-reading region; **Auto-find cards** removes the custom region and restores full-screen searching.
 
 ## Tests
 

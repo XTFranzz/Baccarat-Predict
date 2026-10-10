@@ -579,6 +579,8 @@
   function zonePx() {
     const z = site().cards && site().cards.zone;
     if (!z || !S.frame) return null;
+    if (Number.isFinite(z.fx) && Number.isFinite(z.fy) && Number.isFinite(z.fw) && Number.isFinite(z.fh))
+      return { x: z.fx * S.frame.width, y: z.fy * S.frame.height, width: z.fw * S.frame.width, height: z.fh * S.frame.height };
     const kx = z.imgW ? S.frame.width / z.imgW : 1, ky = z.imgH ? S.frame.height / z.imgH : 1;
     return { x: z.x * kx, y: z.y * ky, width: z.width * kx, height: z.height * ky };
   }
@@ -624,10 +626,10 @@
   }
 
   function processCards(img) {
-    const zone = cardsReady() ? zonePx() : null;
+    const zone = zonePx();
     const found = V.findCards(img, zone);
-    S.cards.box = found ? found.bounds : null;
-    if (!found) { S.cards.present = false; S.cards.lastKey = null; S.cards.streak = 0; S.cards.attachedKey = null; S.cards.calibStreak = 0; return; }
+    S.cards.box = zone || (found ? found.bounds : null);
+    if (!found) { S.cards.present = false; S.cards.lastKey = null; S.cards.streak = 0; S.cards.attachedKey = null; S.cards.calibStreak = 0; drawFrames(); return; }
     // Cards appearing after an empty table start a new deal.
     if (!S.cards.present) { S.cards.present = true; S.cards.epoch++; }
 
@@ -723,9 +725,10 @@
     const tpls = [];
     calib.reads.forEach((r, i) => { if (r && r.feat) tpls.push({ f: r.feat.f, aspect: r.feat.aspect, parts: r.feat.parts, rank: calib.ranks[i] }); });
     const pad = calib.found.cardShort * 1.6, b = calib.found.bounds;
+    const previousZone = site().cards && site().cards.zone;
     site().cards = {
       ready: true, swap: calib.swap, templates: tpls,
-      zone: { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad, imgW: S.frame.width, imgH: S.frame.height },
+      zone: previousZone || { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad, imgW: S.frame.width, imgH: S.frame.height },
       setupAt: Date.now(),
     };
     // Use this confirmed hand straight away.
@@ -749,16 +752,30 @@
 
   // ---- Adjust mode: drag and resize the yellow roadmap box; the app reads only inside it.
   let adj = null;
-  function openAdjust() {
+  function openAdjust(mode = 'roadmap') {
     if (!S.frame) return toast('Open the game first.');
     const fromCompact = document.body.classList.contains('compact');
     if (fromCompact) setCompact(false);
     const area = $('gameArea').getBoundingClientRect();
     let css;
-    if (site().roadBox) css = imgToCss(boxToImg(site().roadBox, S.frame));
-    else if (S.roadBox) { const b = imgToCss(S.roadBox); css = { x: b.x - 6, y: b.y - 6, width: b.width + 12, height: b.height + 12 }; }
+    if (mode === 'cards' && site().cards && site().cards.zone) css = imgToCss(zonePx());
+    else if (mode === 'roadmap' && site().roadBox) css = imgToCss(boxToImg(site().roadBox, S.frame));
+    else if (mode === 'cards' && S.cards.box) {
+      const b = imgToCss(S.cards.box), pad = Math.max(24, Math.min(b.width, b.height) * 0.7);
+      css = { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
+    }
+    else if (mode === 'roadmap' && S.roadBox) { const b = imgToCss(S.roadBox); css = { x: b.x - 6, y: b.y - 6, width: b.width + 12, height: b.height + 12 }; }
+    else if (mode === 'cards') css = { x: area.width * 0.28, y: area.height * 0.38, width: area.width * 0.44, height: area.height * 0.42 };
     else css = { x: area.width / 2 - 160, y: area.height - 160, width: 320, height: 110 };
-    adj = { css, fromCompact, holder: { sig: null } };
+    adj = { css, fromCompact, holder: { sig: null }, mode };
+    $('adjust').classList.toggle('adjust-cards', mode === 'cards');
+    $('adjust .adjust-title').textContent = mode === 'cards' ? 'Put the green box over the dealt cards'
+      : 'Put the yellow box over one roadmap';
+    $('adjust .adjust-bar .muted').textContent = mode === 'cards'
+      ? 'Include the Player and Banker card faces. Drag to move; pull a corner to resize. The preview shows detected cards.'
+      : 'Drag it to move. Pull a corner to resize. The Big Road shows the whole shoe; the Bead Plate often shows only the latest hands.';
+    $('adjustBox span').textContent = mode === 'cards' ? 'Cards' : 'Roadmap';
+    $('adjustAuto').textContent = mode === 'cards' ? 'Auto-find cards' : 'Let the app find it';
     $('adjust').hidden = false;
     placeAdjust();
   }
@@ -776,6 +793,13 @@
     requestAnimationFrame(() => {
       previewQueued = false;
       if (!adj || !S.frame) return;
+      if (adj.mode === 'cards') {
+        const found = V.findCards(S.frame, cssToImg(adj.css));
+        $('adjustRead').innerHTML = found
+          ? `Found <b>${found.left.length + found.right.length} cards</b>. Blue boxes are Player (${found.left.length}); red boxes are Banker (${found.right.length}).`
+          : '<span class="neg">No complete card groups found. Make the box include all 4–6 card faces.</span>';
+        return;
+      }
       const res = readBoxed(S.frame, cssToImg(adj.css), { sig: null });
       const c = { B: 0, P: 0, T: 0 }; res.seq.forEach(x => c[x]++);
       $('adjustRead').innerHTML = res.seq.length
@@ -812,6 +836,15 @@
   }
   $('adjustDone').onclick = () => {
     const r = cssToImg(adj.css), f = S.frame;
+    if (adj.mode === 'cards') {
+      site().cards = site().cards || {};
+      site().cards.zone = { x: r.x, y: r.y, width: r.width, height: r.height, imgW: f.width, imgH: f.height,
+        fx: r.x / f.width, fy: r.y / f.height, fw: r.width / f.width, fh: r.height / f.height };
+      S.cards.lastKey = null; S.cards.streak = 0; S.cards.present = false; S.cards.stable = null; S.cards.attachedKey = null;
+      closeAdjust(); scheduleSave(); processCards(S.frame); drawFrames();
+      toast('Card detection box saved. Keep it over both hands; card setup will start when a hand is visible.');
+      return;
+    }
     site().roadBox = { fx: r.x / f.width, fy: r.y / f.height, fw: r.width / f.width, fh: r.height / f.height };
     S.boxHolder = { sig: null }; S.boxFrame = S.frame.width + 'x' + S.frame.height; S.pendingRoadKey = null;
     const res = readBoxed(S.frame, boxToImg(site().roadBox, S.frame), S.boxHolder);
@@ -837,12 +870,21 @@
     computePrediction(); renderAll(); scheduleSave();
   }
   $('adjustAuto').onclick = () => {
-    delete site().roadBox; S.sig = null; S.sig2 = null; S.boxHolder = null; S.pendingRoadKey = null;
-    closeAdjust(); scheduleSave();
-    toast('The app will find the roadmap by itself.');
+    if (adj && adj.mode === 'cards') {
+      if (site().cards) delete site().cards.zone;
+      S.cards.lastKey = null; S.cards.present = false; S.cards.stable = null;
+      closeAdjust(); scheduleSave(); processCards(S.frame);
+      toast('Card detection will search the full screen again.');
+    } else {
+      delete site().roadBox; S.sig = null; S.sig2 = null; S.boxHolder = null; S.pendingRoadKey = null;
+      closeAdjust(); scheduleSave();
+      toast('The app will find the roadmap by itself.');
+    }
   };
   $('btnAdjust').onclick = () => openAdjust();
   $('roadFrameLabel').onclick = () => openAdjust(); // click the yellow label to move or resize the box
+  $('btnAdjustCards').onclick = () => openAdjust('cards');
+  $('cardFrameLabel').onclick = () => openAdjust('cards');
   window.addEventListener('resize', () => { if (adj) placeAdjust(); });
   overlay.addEventListener('mousedown', e => {
     const r = overlay.getBoundingClientRect();

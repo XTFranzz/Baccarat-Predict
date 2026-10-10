@@ -20,6 +20,8 @@
 
   const sig = z => 1 / (1 + Math.exp(-z));
   const clampP = p => Math.min(0.99, Math.max(0.01, p));
+  const MIN_VALIDATION_HANDS = 500;
+  const MIN_LOGLOSS_GAIN = 0.002;
 
   // Feature vector, positive values lean Banker.
   function features(history, mathQ) {
@@ -65,7 +67,8 @@
 
   // Scores the logged predictions (each made before its result was known).
   function stats(log, recent = 50) {
-    const decided = log.filter(e => e.pred && e.result !== 'T');
+    const eligible = log.filter(e => !e.replay && !e.joined);
+    const decided = eligible.filter(e => e.pred && e.result !== 'T');
     const acc = arr => arr.length ? arr.filter(e => e.pred.side === e.result).length / arr.length : null;
     const sure = decided.filter(e => e.pred.sure);
     let llModel = 0, llMath = 0;
@@ -79,7 +82,7 @@
       const inB = decided.filter(e => { const c = Math.max(e.pred.q, 1 - e.pred.q); return c >= lo && c < hi; });
       return { lo, hi, n: inB.length, said: inB.length ? inB.reduce((a, e) => a + Math.max(e.pred.q, 1 - e.pred.q), 0) / inB.length : null, hit: acc(inB) };
     });
-    const road = log.filter(e => e.road && e.road.side && e.result !== 'T');
+    const road = eligible.filter(e => e.road && e.road.side && e.result !== 'T');
     const roadAcc = road.length ? road.filter(e => e.road.side === e.result).length / road.length : null;
     return {
       roadN: road.length,
@@ -97,6 +100,59 @@
     };
   }
 
-  root.Learner = { FEATURES, PRIOR, features, createModel, predict, update, stats };
+  function decision({ modelQ, math, proofN, modelVsMath, roadSide, roadN, roadAccuracy, shoeComplete }) {
+    const votes = [];
+    if (!math || !Number.isFinite(math.B) || !Number.isFinite(math.P) || !Number.isFinite(math.T)) {
+      return { side: null, ev: null, reason: 'Waiting for valid shoe odds', votes };
+    }
+    const mathEV = { B: math.B * 0.95 - math.P, P: math.P - math.B };
+    const mathSide = math.B >= math.P ? 'B' : 'P';
+    votes.push({
+      name: 'Shoe math',
+      side: mathEV[mathSide] > 0 ? mathSide : null,
+      detail: mathEV[mathSide] > 0
+        ? `${nameSide(mathSide)} has positive expected return (${(mathEV[mathSide] * 100).toFixed(2)}%)`
+        : `${nameSide(mathSide)} is slightly more likely, but neither bet has positive expected return`,
+    });
+    const modelEligible = shoeComplete && Number.isFinite(modelQ) &&
+      proofN >= MIN_VALIDATION_HANDS && modelVsMath > MIN_LOGLOSS_GAIN;
+    const modelEV = Number.isFinite(modelQ)
+      ? { B: (1 - math.T) * modelQ * 0.95 - (1 - math.T) * (1 - modelQ),
+        P: (1 - math.T) * (1 - modelQ) - (1 - math.T) * modelQ }
+      : null;
+    const modelSide = Number.isFinite(modelQ) ? (modelQ >= 0.5 ? 'B' : 'P') : null;
+    const modelHasEdge = modelEligible && modelEV[modelSide] > 0.01;
+    votes.push({
+      name: 'Live model statistics',
+      side: modelHasEdge ? modelSide : null,
+      detail: !shoeComplete ? 'No vote: shoe tracking is incomplete'
+        : proofN < MIN_VALIDATION_HANDS ? `No vote: ${proofN}/${MIN_VALIDATION_HANDS} prospective hands`
+          : modelVsMath <= MIN_LOGLOSS_GAIN ? 'No vote: model has not clearly beaten shoe math'
+            : !modelHasEdge ? `Leans ${nameSide(modelSide)}, but its estimated return is not positive`
+              : `Validated on ${proofN} prospective hands; estimated return ${(modelEV[modelSide] * 100).toFixed(2)}%`,
+    });
+    const roadEligible = Number.isFinite(roadAccuracy) && roadN >= 100 && roadAccuracy >= 0.55 && roadAccuracy > 0.5;
+    votes.push({
+      name: 'Roadmap history',
+      side: roadEligible ? roadSide : null,
+      detail: !roadSide ? 'No clear pattern pick'
+        : roadN < 100 ? `No vote: only ${roadN}/100 settled roadmap picks`
+          : roadAccuracy < 0.55 ? `No vote: ${Math.round(roadAccuracy * 100)}% accuracy is below the 55% evidence threshold`
+            : `Supports ${nameSide(roadSide)}: ${Math.round(roadAccuracy * 100)}% across ${roadN} settled picks`,
+    });
+    const counted = votes.filter(v => v.side);
+    const bVotes = counted.filter(v => v.side === 'B').length;
+    const pVotes = counted.filter(v => v.side === 'P').length;
+    if (bVotes < 2 && pVotes < 2) {
+      return { side: null, ev: null, votes, reason: 'No consensus: fewer than two evidence sources support a positive-return side' };
+    }
+    const side = bVotes > pVotes ? 'B' : 'P';
+    return { side, ev: side === modelSide && modelHasEdge ? modelEV[side] : mathEV[side], votes,
+      reason: `${Math.max(bVotes, pVotes)} evidence sources support ${nameSide(side)}; this is still an experimental conclusion, not a guarantee` };
+  }
+
+  function nameSide(side) { return side === 'B' ? 'Banker' : 'Player'; }
+
+  root.Learner = { FEATURES, PRIOR, features, createModel, predict, update, stats, decision };
   if (typeof module !== 'undefined') module.exports = root.Learner;
 })(typeof window !== 'undefined' ? window : globalThis);

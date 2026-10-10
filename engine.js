@@ -208,26 +208,61 @@
     return c;
   }
 
-  // Monte Carlo odds of the next hand drawn from the remaining cards.
-  function probsFromCounts(counts, samples = 60000, rng = Math.random) {
+  // Exact odds for the next hand, enumerating draws without replacement from the known shoe.
+  function probsFromCounts(counts) {
+    if (!Array.isArray(counts) || counts.length !== 10 ||
+        counts.some(n => !Number.isInteger(n) || n < 0)) return null;
     const total0 = counts.reduce((a, b) => a + b, 0);
     if (total0 < 6) return null;
-    const taken = new Int32Array(10), used = new Int32Array(6);
-    let k = 0, total = total0;
-    const draw = () => {
-      let r = Math.floor(rng() * total), v = 0;
-      for (; v < 9; v++) { const left = counts[v] - taken[v]; if (r < left) break; r -= left; }
-      taken[v]++; used[k++] = v; total--;
-      return v;
+    const left = counts.slice(), odds = { B: 0, P: 0, T: 0 };
+    const addResult = (p, b, weight) => {
+      odds[b > p ? 'B' : p > b ? 'P' : 'T'] += weight;
     };
-    let nb = 0, np = 0, nt = 0;
-    for (let s = 0; s < samples; s++) {
-      k = 0; total = total0;
-      const res = resolve(draw);
-      for (let j = 0; j < k; j++) taken[used[j]]--;
-      if (res === 'B') nb++; else if (res === 'P') np++; else nt++;
-    }
-    return { B: nb / samples, P: np / samples, T: nt / samples };
+    const drawThird = (bankerTotal, playerTotal, playerThird, weight, remaining) => {
+      if (!bankerDraws(bankerTotal, playerThird)) {
+        addResult(playerTotal, bankerTotal, weight);
+        return;
+      }
+      for (let v = 0; v < 10; v++) {
+        if (!left[v]) continue;
+        const chance = weight * left[v] / remaining;
+        left[v]--;
+        addResult(playerTotal, (bankerTotal + v) % 10, chance);
+        left[v]++;
+      }
+    };
+    const afterInitial = (p1, b1, p2, b2, weight, remaining) => {
+      const player = (p1 + p2) % 10, banker = (b1 + b2) % 10;
+      if (player >= 8 || banker >= 8) {
+        addResult(player, banker, weight);
+      } else if (player <= 5) {
+        for (let v = 0; v < 10; v++) {
+          if (!left[v]) continue;
+          const chance = weight * left[v] / remaining;
+          left[v]--;
+          drawThird(banker, (player + v) % 10, v, chance, remaining - 1);
+          left[v]++;
+        }
+      } else {
+        drawThird(banker, player, -1, weight, remaining);
+      }
+    };
+    const initial = (depth, cards, weight, remaining) => {
+      if (depth === 4) {
+        afterInitial(cards[0], cards[1], cards[2], cards[3], weight, remaining);
+        return;
+      }
+      for (let v = 0; v < 10; v++) {
+        if (!left[v]) continue;
+        const chance = weight * left[v] / remaining;
+        left[v]--;
+        cards[depth] = v;
+        initial(depth + 1, cards, chance, remaining - 1);
+        left[v]++;
+      }
+    };
+    initial(0, new Array(4), 1, total0);
+    return odds;
   }
 
   // Check a fully dealt hand against the drawing rules. pv/bv = card values in any order.

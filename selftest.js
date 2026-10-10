@@ -100,6 +100,13 @@ module.exports = async function selftest(win) {
     const truthAtJoin = await T('truth.shoes[0].hands.map(h => h.result).join("")');
     log(`roadmap found in ${tJoin} ms as`, await js('window.__bp.S.sig.kind'));
     log('joined history', joinedHist, joinedHist === truthAtJoin.slice(0, joinedHist.length) ? 'OK' : 'MISMATCH vs ' + truthAtJoin);
+    const joinScores = await js(`(() => {
+      const joined = window.__bp.S.log.filter(e => e.joined);
+      const stats = Learner.stats(window.__bp.S.log);
+      return { count: joined.length, invalidPicks: joined.filter(e => e.pred || e.road).length, scored: stats.decided + stats.roadN };
+    })()`);
+    if (!joinScores.count || joinScores.invalidPicks || joinScores.scored) throw new Error('mid-shoe join hands were incorrectly predicted or scored: ' + JSON.stringify(joinScores));
+    log('joined hands excluded from picks and scores', JSON.stringify(joinScores), 'OK');
 
     if (process.env.BP_BOX) {
       // Use the adjustable box: open adjust mode (starts around the detected road), screenshot, confirm.
@@ -173,7 +180,19 @@ module.exports = async function selftest(win) {
     log('count check: cards in log', counted, 'vs shoe counter', S.shoe.cardsSeen, counted === S.shoe.cardsSeen ? 'OK' : 'MISMATCH');
     log('captures', await js('JSON.stringify({ scans: window.__bp.S.scanCount, failed: window.__bp.S.captureFails || 0, fresh: window.__bp.S.freshFrames })'));
     log('scan processing time', await js('window.__bp.S.scanMs'), 'ms, frame', await js('window.__bp.S.frame.width + "x" + window.__bp.S.frame.height'));
-    log('predictions logged', S.log.filter(e => e.pred).length, 'model hands', await js('window.__bp.S.model.n'));
+    const forecastCheck = await js(`(() => {
+      const forecasts = window.__bp.S.log.filter(e => e.pred && !e.joined && !e.replay);
+      const headline = document.querySelector('#prediction .title')?.innerText || '';
+      return { count: forecasts.length,
+        badSides: forecasts.filter(e => e.pred.side !== (e.pred.modelQ >= 0.5 ? 'B' : 'P')).length,
+        missingModelProbability: forecasts.filter(e => !Number.isFinite(e.pred.modelQ)).length,
+        roadmapComparisons: forecasts.filter(e => e.road).length,
+        headline: headline };
+    })()`);
+    if (forecastCheck.badSides || forecastCheck.missingModelProbability || !forecastCheck.roadmapComparisons ||
+        !/^(Reliable|Likely) next hand: (Banker|Player)$/.test(forecastCheck.headline))
+      throw new Error('logged forecast or displayed next-hand headline is invalid: ' + JSON.stringify(forecastCheck));
+    log('pattern-aware model forecasts', JSON.stringify(forecastCheck), 'OK; model hands', await js('window.__bp.S.model.n'));
 
     await shot('window');
     for (const id of ['prediction', 'versus', 'logView']) {

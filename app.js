@@ -20,7 +20,7 @@
     history: [], maxVisible: 0, emptyScans: 0, possibleShuffle: false, joined: false,
     shoe: null,
     cards: { lastKey: null, streak: 0, stable: null, attachedKey: null, calibOpen: false, calibStreak: 0, snoozeUntil: 0, last: null, box: null, epoch: 0, present: false },
-    model: L.createModel(null), log: [], settings: { sure: 0.55, interval: 1000, frames: true, headline: 'roadmap' },
+    model: L.createModel(null), log: [], settings: { sure: 0.55, interval: 1000, frames: true },
     pending: null,
     timer: null, scanning: false, debug: [], events: [],
   };
@@ -64,6 +64,19 @@
       S.settings.dataVersion = 2;
       S.cleanedUp = true;
       await saveNow();
+    }
+    const previousLog = S.log.map(e => ({ ...e, pred: e.pred && { ...e.pred }, road: e.road && { ...e.road } }));
+    let normalized = false;
+    for (const e of S.log) {
+      if ((e.joined || e.replay) && (e.pred || e.road || !e.replay)) {
+        e.pred = null; e.road = null; delete e.correct; delete e.roadCorrect; e.replay = true;
+        normalized = true;
+      }
+    }
+    if (normalized) {
+      const stamp = new Date().toISOString().slice(0, 10);
+      await bridge.save('backup-' + stamp + '-prediction-log', previousLog);
+      await bridge.save('log', S.log.slice(-20000));
     }
   }
   const site = () => (S.sites[S.host] = S.sites[S.host] || {});
@@ -461,7 +474,7 @@
     S.history = []; S.maxVisible = 0;
     computePrediction();
     toast('New shoe detected. Counting cards from the start.');
-    seq.forEach(r => addResult(r, seq.length === 1));
+    seq.forEach(r => addResult(r, false));
     if (seq.length > 2) S.shoe.fromStart = false;
     renderAll();
   }
@@ -473,15 +486,16 @@
   function addResult(r, live = true) {
     const p = S.pending;
     const e = { t: Date.now(), epoch: S.cards.epoch, site: S.host, shoe: S.shoe.id, hand: S.history.length + 1, result: r, cards: null,
-      pred: p ? { side: p.side, q: +p.q.toFixed(4), mathQ: +p.mathQ.toFixed(4), sure: p.sure, conf: +p.conf.toFixed(4) } : null,
-      road: p && p.road && p.road.side ? { side: p.road.side, reason: p.road.reason } : null };
+      pred: live && !S.joining && p ? { side: p.side, q: +p.q.toFixed(8), mathQ: +p.mathQ.toFixed(8),
+        sure: p.sure, conf: +p.conf.toFixed(8), modelQ: +p.modelQ.toFixed(8), oddsVersion: 2 } : null,
+      road: live && !S.joining && p && p.road && p.road.side ? { side: p.road.side, reason: p.road.reason } : null };
     if (!live) e.replay = true;
     if (S.joining) e.joined = true;
-    if (e.pred && p) e.pred.modelQ = +p.modelQ.toFixed(4);
     if (e.road && r !== 'T') e.roadCorrect = e.road.side === r;
-    if (p && r !== 'T') {
-      e.correct = p.side === r;
-      if (live) L.update(S.model, p.x, r === 'B' ? 1 : 0);
+    if (e.pred && p) e.pred.modelQ = +p.modelQ.toFixed(8);
+    if (e.pred && r !== 'T') {
+      e.correct = e.pred.side === r;
+      L.update(S.model, p.x, r === 'B' ? 1 : 0);
     }
     S.log.push(e);
     S.history.push(r);
@@ -536,19 +550,27 @@
   // ------------------------------------------------------------------ prediction
   function computePrediction() {
     const shoe = S.shoe;
-    const math = shoe && shoe.cardsSeen ? (B.probsFromCounts(shoe.counts, 80000) || BASE) : BASE;
+    const math = shoe && shoe.cardsSeen ? (B.probsFromCounts(shoe.counts) || BASE) : BASE;
     const mathQ = math.B / (math.B + math.P);
     const x = L.features(S.history, mathQ);
     const modelQ = L.predict(S.model, x);
-    const proof = L.stats(S.log.filter(e => !e.replay).slice(-400));
-    const proven = proof.decided >= 100 && proof.modelVsMath > 0.0005;
-    const q = proven ? modelQ : mathQ;
-    const side = q >= 0.5 ? 'B' : 'P';
-    const conf = Math.max(q, 1 - q);
+    const liveStats = L.stats(S.log.filter(e => !e.replay));
+    const mathSide = mathQ >= 0.5 ? 'B' : 'P';
+    const mathConf = Math.max(mathQ, 1 - mathQ);
+    const side = modelQ >= 0.5 ? 'B' : 'P';
+    const conf = Math.max(modelQ, 1 - modelQ);
+    const decision = L.decision({
+      modelQ, math, proofN: liveStats.decided, modelVsMath: liveStats.modelVsMath,
+      shoeComplete: !!(shoe && shoe.fromStart),
+      roadSide: B.roadmapPick(S.history).side, roadN: liveStats.roadN, roadAccuracy: liveStats.roadAccuracy,
+    });
+    const road = B.roadmapPick(S.history);
     S.pending = {
-      x, q, modelQ, proven, proofN: proof.decided, mathQ, side, conf, math, road: B.roadmapPick(S.history),
-      sure: conf >= S.settings.sure,
-      probs: { B: (1 - math.T) * q, P: (1 - math.T) * (1 - q), T: math.T },
+      x, q: modelQ, modelQ, mathQ, mathSide,
+      mathProbs: { B: math.B, P: math.P, T: math.T }, side, conf, math, road,
+      decision,
+      mathSure: mathConf >= S.settings.sure, mathConf,
+      sure: conf >= S.settings.sure, probs: { B: math.B, P: math.P, T: math.T },
       ev: { B: math.B * 0.95 - math.P, P: math.P - math.B, T: math.T * 8 - (1 - math.T) },
     };
   }
@@ -890,47 +912,48 @@
       badge.textContent = 'Waiting'; badge.className = 'pill';
       return;
     }
-    // Main pick: the Roadmap pattern (default) or the Model. The other is shown underneath.
-    const rp = p.road && p.road.side ? p.road : null;
-    const useRoad = S.settings.headline !== 'model' && rp;
-    const side = useRoad ? rp.side : p.side;
-    const winChance = side === 'B' ? p.mathQ : 1 - p.mathQ; // true chance from the cards / standard odds
-    if (useRoad) { badge.textContent = 'Roadmap pattern'; badge.className = 'pill'; }
-    else { badge.textContent = p.sure ? 'STRONG LEAN' : 'Lean only'; badge.className = 'pill ' + (p.sure ? 'sure' : ''); }
+    // Use the learned card-and-roadmap model as the experimental forecast; show exact shoe odds separately.
+    const side = p.decision.side, modelSide = p.side, conf = p.conf, probs = p.mathProbs;
+    const road = p.road && p.road.side ? p.road : null;
+    const liveStats = L.stats(S.log.filter(e => !e.replay));
+    badge.textContent = 'Experimental model'; badge.className = 'pill';
     const usingCards = S.shoe && S.shoe.cardsSeen > 0;
+    const cardSource = !usingCards ? 'the standard 8-deck shoe'
+      : S.shoe.fromStart ? 'the tracked cards remaining in this shoe'
+        : 'cards tracked since joining; earlier dealt cards are unknown';
     const evCell = s => `<div><span>${NAMES[s]}</span><b class="${p.ev[s] > 0 ? 'pos' : 'neg'}">${signPct(p.ev[s])}</b></div>`;
     const plusEv = ['B', 'P', 'T'].filter(s => p.ev[s] > 0);
     el.innerHTML = `
-      ${useRoad ? `<div class="big">
-        <div class="side-chip ${side}">${side}</div>
+      <div class="big">
+        <div class="side-chip ${side || modelSide}">${side || modelSide}</div>
         <div>
-          <div class="title">${NAMES[side]}</div>
-          <div class="muted small">${rp.reason}.</div>
-          <div class="muted small">Real chance to beat ${NAMES[side === 'B' ? 'P' : 'B']} if not a tie: ${pct(winChance)}. Patterns do not change the odds.</div>
+          <div class="title">${side ? `Reliable next hand: ${NAMES[side]}` : `Likely next hand: ${NAMES[modelSide]}`}</div>
+          <div class="muted small">${side
+            ? `${p.decision.reason}. This is still an estimate, not a guarantee.`
+            : `No reliable pick: ${p.decision.reason}. Best model estimate is ${pct(conf)} conditional on no tie.`}</div>
         </div>
       </div>
-      <div class="note">Model (math) says <b>${NAMES[p.side]}</b> ${pct(p.conf)}. Switch the main pick in Settings and tools.</div>`
-      : `<div class="big ${p.sure ? 'sure' : ''}">
-        <div class="side-chip ${p.side}">${p.side}</div>
-        <div>
-          <div class="title">${NAMES[p.side]}</div>
-          <div class="muted small">${pct(p.conf)} chance to beat ${NAMES[p.side === 'B' ? 'P' : 'B']} if the hand is not a tie.
-          ${p.sure ? 'Above your strong-lean level, but never guaranteed.' : `Below your strong-lean level of ${pct(S.settings.sure, 0)}.`}</div>
-        </div>
-      </div>
-      ${rp ? `<div class="note">Roadmap pattern says <b>${NAMES[rp.side]}</b>: ${rp.reason}.</div>` : ''}`}
+      ${road ? `<div class="note">Roadmap pattern view: <b>${NAMES[road.side]}</b> — ${road.reason}. Historical pattern accuracy: ${liveStats.roadAccuracy == null ? '–' : pct(liveStats.roadAccuracy)} of ${liveStats.roadN} settled picks; this is not proof of an edge.</div>` : ''}
+      <div class="note">Model view: <b>${NAMES[modelSide]}</b> (${pct(conf)} conditional estimate). It is experimental and is not reliable unless the evidence gate passes.</div>
       <div class="bars">
         ${['B', 'P', 'T'].map(s => `<div class="bar"><span>${NAMES[s]}</span>
-          <div class="track"><div class="fill" style="width:${(p.probs[s] * 100 / 0.6).toFixed(1)}%;background:${COLORS[s]}"></div></div>
-          <span class="num">${pct(p.probs[s])}</span></div>`).join('')}
+          <div class="track"><div class="fill" style="width:${(probs[s] * 100 / 0.6).toFixed(1)}%;background:${COLORS[s]}"></div></div>
+          <span class="num">${pct(probs[s])}</span></div>`).join('')}
+      </div>
+      <div class="note">Exact shoe odds alone favor <b>${NAMES[p.mathSide]}</b>: Banker ${pct(p.mathQ)} vs Player ${pct(1 - p.mathQ)} conditional on no tie. The model can disagree based on patterns, but those patterns are not proven to predict outcomes.</div>
+      <div class="road-pick">
+        <div><b>Evidence and disagreement</b>
+          <ul class="muted small">${p.decision.votes.map(v => `<li><b>${v.name}:</b> ${v.detail}</li>`).join('')}</ul>
+          ${p.decision.ev == null ? '' : `<div class="muted small">Experimental estimated return: ${signPct(p.decision.ev)} per unit. Not a proven betting edge.</div>`}
+        </div>
       </div>
       <div class="note">Expected return per bet, from the ${usingCards ? 'cards left in this shoe' : 'standard 8-deck odds'}:</div>
       <div class="ev">${evCell('B')}${evCell('P')}${evCell('T')}</div>
       <div class="note">${plusEv.length ? `<b class="pos">Rare spot: ${plusEv.map(s => NAMES[s]).join(' and ')} has a positive edge right now.</b>`
         : 'No bet has a positive edge this hand. Banker loses the least.'}
         Card math alone says Banker ${pct(p.mathQ)} vs Player ${pct(1 - p.mathQ)}.</div>
-      <div class="note">${p.proven ? `Learned patterns are in use: they predicted your last ${p.proofN} live hands better than the plain math.`
-        : `Learned patterns are not used yet: they must first beat the plain math over at least 100 live hands (${p.proofN} so far). Until then the Model pick follows the math.`}</div>`;
+      <div class="note">${S.shoe && !S.shoe.fromStart ? 'Mid-shoe note: cards dealt before joining are unknown, so the shoe-odds comparison uses only cards tracked since joining.' : `Odds shown are calculated from ${cardSource}.`}
+        The system requires two independent sources to support the same positive-return side; it can abstain and cannot guarantee a win.</div>`;
   }
 
   // Roadmap read: the patterns on screen now, with how often each one really continues.
@@ -939,23 +962,15 @@
     const el = $('roadRead');
     const r = B.runsNow(S.history);
     if (!S.joined || !r.side) { el.innerHTML = ''; return; }
-    const rp = S.pending && S.pending.road;
-    const st = L.stats(S.log.filter(e => !e.replay));
-    const pickHtml = rp && rp.side ? `<div class="road-pick">
-        <div class="side-chip small ${rp.side}">${rp.side}</div>
-        <div><b>Roadmap pick: ${NAMES[rp.side]}</b><div class="muted small">${rp.reason}</div>
-        <div class="muted small">Roadmap picks right so far: ${st.roadAccuracy == null ? '–' : pct(st.roadAccuracy)} of ${st.roadN} · Model picks: ${st.accuracy == null ? '–' : pct(st.accuracy)} of ${st.decided}</div></div>
-      </div>` : '';
     const t = runTable;
     const chance = (arr, k) => (t && arr[Math.min(k, 12)] != null ? pct(arr[Math.min(k, 12)]) : '…');
     const streakLine = `<div class="rr-row"><span>${NAMES[r.side]} streak of ${r.run}. A streak this long continued</span><b>${chance(t ? t.streakContinue : [], r.run)}</b></div>`;
     const chopLine = r.alt >= 2 ? `<div class="rr-row"><span>Ping-pong of ${r.alt}. A ping-pong this long continued</span><b>${chance(t ? t.chopContinue : [], r.alt)}</b></div>` : '';
-    el.innerHTML = `<h4>Roadmap read</h4>${pickHtml}${streakLine}${chopLine}
+    el.innerHTML = `<h4>Roadmap read</h4>${streakLine}${chopLine}
       <div class="rr-row"><span>This shoe so far: longest streak</span><b>${r.maxRun} ${r.maxRunSide ? NAMES[r.maxRunSide] : ''}</b></div>
       <div class="rr-row"><span>Longest ping-pong</span><b>${r.maxAlt}</b></div>
       <div class="note">${t ? `In ${t.shoes.toLocaleString()} simulated shoes, ${pct(t.share.streak6, 0)} had a streak of 6 or more and ${pct(t.share.chop10, 0)} had a ping-pong of 10 or more.
-        Long runs are normal, but a run of any length continued about half the time. The roadmap shows what happened, not when a run ends.
-        The model still watches these patterns in your own results and will lean on them if they ever prove predictive.` : 'Measuring how runs behave in simulated shoes…'}</div>`;
+        Long runs are normal, but a run of any length continued about half the time. These patterns describe past results; the next-hand forecast uses shoe odds only.` : 'Measuring how runs behave in simulated shoes…'}</div>`;
   }
 
   function renderBoxStatus() {
@@ -992,7 +1007,7 @@
 
   function renderLearning() {
     const st = L.stats(S.log.filter(e => !e.replay));
-    $('learnBadge').textContent = `${st.decided} live hands learned`;
+    $('learnBadge').textContent = `${st.decided} forecasts scored`;
     const fmt = v => (v == null ? '–' : pct(v));
     const mvm = st.modelVsMath;
     const mvmText = st.decided < 30 ? 'Learning vs card math (needs 30+ hands)'
@@ -1000,12 +1015,12 @@
     const w = S.model.w;
     $('learning').innerHTML = `
       <div class="stats">
-        <div class="stat"><b>${fmt(st.accuracy)}</b><span>All predictions right (${st.decided})</span></div>
-        <div class="stat"><b>${fmt(st.sureAccuracy)}</b><span>Strong leans right (${st.sureN})</span></div>
+        <div class="stat"><b>${fmt(st.accuracy)}</b><span>Forecasts right (${st.decided})</span></div>
+        <div class="stat"><b>${fmt(st.sureAccuracy)}</b><span>Strong model estimates right (${st.sureN})</span></div>
         <div class="stat"><b>${fmt(st.recent)}</b><span>Last ${st.recentN} predictions</span></div>
         <div class="stat"><b class="${mvm > 0.0005 ? 'pos' : mvm < -0.0005 ? 'neg' : ''}">${st.decided < 30 ? '–' : (mvm >= 0 ? '+' : '−') + Math.abs(mvm * 1000).toFixed(1)}</b><span>${mvmText}</span></div>
       </div>
-      <div class="note">What the model has learned. Each bar shows how much a signal pushes the prediction toward Banker (red, right) or Player (blue, left). The card math starts at full weight and every pattern starts at zero.</div>
+      <div class="note">The experimental model above uses these learned signal weights to adjust the shoe-odds estimate. A model adjustment is not evidence of a real edge.</div>
       <div class="weights">${L.FEATURES.map((f, i) => {
         const v = w[i] - L.PRIOR[i], sc = Math.max(-1, Math.min(1, v / 0.5));
         const left = sc >= 0 ? 50 : 50 + sc * 50, width = Math.abs(sc) * 50;
@@ -1013,49 +1028,51 @@
           <div class="w-track"><div class="mid"></div><div class="val" style="left:${left}%;width:${width}%;background:${v >= 0 ? COLORS.B : COLORS.P}"></div></div>
           <span class="num">${v >= 0 ? '+' : ''}${v.toFixed(3)}</span></div>`;
       }).join('')}</div>
-      <table><tr><th>Model said</th><th>Hands</th><th>Average claim</th><th>Actually right</th></tr>
+      <table><tr><th>Forecast claimed</th><th>Hands</th><th>Average chance</th><th>Actually right</th></tr>
         ${st.buckets.map(b => `<tr><td>${pct(b.lo, 0)}–${b.hi > 1 ? '100%' : pct(b.hi, 0)}</td><td>${b.n}</td><td>${b.said == null ? '–' : pct(b.said)}</td><td>${b.hit == null ? '–' : pct(b.hit)}</td></tr>`).join('')}
       </table>
-      <div class="note">When "Actually right" matches "Average claim", the model is honest about how sure it is.</div>`;
+      <div class="note">Chance buckets compare the saved forecast probabilities with observed live results. Joined and replayed hands are excluded.</div>`;
   }
 
-  // Hand log: every hand with both predictions and whether each one won.
+  // Hand log: live forecasts and outcomes, with unscored hands kept for context.
   function renderLog() {
     const range = $('logRange').value;
     let rows = range === 'all' ? S.log : range === 'shoe' ? S.log.filter(e => S.shoe && e.shoe === S.shoe.id) : S.log.slice(-20);
     rows = rows.slice().reverse();
     if (!rows.length) {
       $('logView').innerHTML = `<p class="muted small">${S.joined ? 'No hands yet in this view.'
-        : 'Nothing logged yet. Open the game (or Watch a window) and the hands will appear here: the ones already on the roadmap, then every new hand with what the model and the roadmap predicted.'}</p>`;
+        : 'Nothing logged yet. Open the game (or Watch a window) to see exact shoe-odds forecasts for upcoming hands.'}</p>`;
       return;
     }
     // Summary of the rows shown: won / lost / push / no pick for each pick.
     const tally = get => {
       const t = { won: 0, lost: 0, push: 0, none: 0 };
-      for (const e of rows) { const side = get(e); if (!side) t.none++; else if (e.result === 'T') t.push++; else if (side === e.result) t.won++; else t.lost++; }
+      for (const e of rows) {
+        const side = !e.joined && !e.replay ? get(e) : null;
+        if (!side) t.none++; else if (e.result === 'T') t.push++; else if (side === e.result) t.won++; else t.lost++;
+      }
       return t;
     };
-    const tm = tally(e => e.pred && e.pred.side), tr = tally(e => e.road && e.road.side);
+    const tm = tally(e => e.pred && e.pred.side);
     const line = (name, t) => `<tr><td>${name}</td><td class="pos">${t.won}</td><td class="neg">${t.lost}</td><td>${t.push}</td><td>${t.none}</td>
       <td><b>${t.won + t.lost ? pct(t.won / (t.won + t.lost), 0) : '–'}</b></td></tr>`;
     const summary = `<table class="log-sum"><tr><th>Out of ${rows.length} hands</th><th>Won</th><th>Lost</th><th>Push</th><th>No pick</th><th>Win rate</th></tr>
-      ${line('Model', tm)}${line('Roadmap', tr)}</table>
-      <p class="note">Push = Tie (bet returned). Win rate = won ÷ (won + lost).</p>`;
+      ${line('Forecast', tm)}</table>
+      <p class="note">Joined and replayed hands are not scored. Push = Tie (bet returned). Win rate = won ÷ (won + lost).</p>`;
     const verdict = (side, result) => !side ? '' : result === 'T' ? '<span class="muted">push</span>'
       : side === result ? '<span class="mark-ok" title="won">✓</span>' : '<span class="mark-bad" title="lost">✗</span>';
-    $('logView').innerHTML = summary + `<table><tr><th>Shoe · hand</th><th>Result</th><th>Model</th><th>Roadmap</th><th>Cards P | B</th></tr>
+    $('logView').innerHTML = summary + `<table><tr><th>Shoe · hand</th><th>Result</th><th>Forecast</th><th>Cards P | B</th></tr>
       ${rows.map(e => `<tr>
         <td>${e.shoe} · ${e.hand}${e.joined ? ' <small class="muted" title="Already on the roadmap when the app started watching">before you joined</small>'
-          : e.replay ? ' <small class="muted" title="Re-read or corrected: not learned from or scored">re-read</small>' : ''}</td>
+          : e.replay ? ' <small class="muted" title="Already visible when detected, re-read, or corrected: not scored">unscored</small>' : ''}</td>
         <td><span class="res ${e.result}">${e.result}</span></td>
-        <td>${e.pred ? `<span class="res ${e.pred.side}">${e.pred.side}</span> ${verdict(e.pred.side, e.result)} <small class="muted">${pct(e.pred.conf, 0)}${e.pred.sure ? ' ★' : ''}</small>` : '–'}</td>
-        <td>${e.road ? `<span class="res ${e.road.side}" title="${e.road.reason}">${e.road.side}</span> ${verdict(e.road.side, e.result)}` : '–'}</td>
+        <td>${!e.joined && !e.replay && e.pred ? `<span class="res ${e.pred.side}">${e.pred.side}</span> ${verdict(e.pred.side, e.result)} <small class="muted">${pct(e.pred.conf, 0)}${e.pred.sure ? ' ★' : ''}</small>` : '–'}</td>
         <td class="muted">${e.cards ? `${e.cards.P.join(' ')} | ${e.cards.B.join(' ')}` : '–'}</td></tr>`).join('')}
     </table>`;
   }
   $('logRange').onchange = renderLog;
 
-  // Statistics: model pick vs roadmap pick, as a scoreboard and as running accuracy over time.
+  // Score only forecasts actually shown before a live hand.
   function scoreOf(entries, pick) {
     const d = entries.filter(e => pick(e) && e.result !== 'T');
     const won = d.filter(e => pick(e) === e.result).length;
@@ -1070,32 +1087,31 @@
     return { n: d.length, won, lost: d.length - won, rate: d.length ? won / d.length : null, last20: last20.length ? w20 / last20.length : null, run, runType };
   }
   function renderVersus() {
-    const liveLog = S.log.filter(e => !e.replay);
-    const m = scoreOf(liveLog, e => e.pred && e.pred.side), r = scoreOf(liveLog, e => e.road && e.road.side);
-    $('statsBadge').textContent = `${S.log.length} hands logged`;
+    const liveLog = S.log.filter(e => !e.replay && !e.joined);
+    const m = scoreOf(liveLog, e => e.pred && e.pred.side);
+    $('statsBadge').textContent = `${m.n} forecasts scored`;
     const row = (cls, name, s) => `<tr><td><span class="key ${cls}"></span>${name}</td><td>${s.n}</td><td>${s.won}</td><td>${s.lost}</td>
       <td><b>${s.rate == null ? '–' : pct(s.rate)}</b></td><td>${s.last20 == null ? '–' : pct(s.last20, 0)}</td><td>${s.run ? s.runType + s.run : '–'}</td></tr>`;
     $('versus').innerHTML = `
       <table class="vs-table"><tr><th>Pick</th><th>Picks</th><th>Won</th><th>Lost</th><th>Win rate</th><th>Last 20</th><th>Now</th></tr>
-        ${row('model', 'Model pick', m)}${row('road', 'Roadmap pick', r)}</table>
-      <div class="note">Only live hands count. Ties are pushes and left out. "Now" is the current run of wins (W) or losses (L). A fair coin would win about 50%.</div>
+        ${row('model', 'Pattern-aware model', m)}</table>
+      <div class="note">Only forecasts made before a live hand are scored. Joined mid-shoe hands, re-reads, and ties are excluded. Win rate is a record, not a guarantee of future results.</div>
       <div class="chart" id="vsChart"></div>
-      <div class="chart-legend"><span><i class="key model"></i>Model pick</span><span><i class="key road"></i>Roadmap pick</span><span>- - 50% coin flip</span></div>`;
+      <div class="chart-legend"><span><i class="key model"></i>Pattern-aware model</span><span>- - 50% reference</span></div>`;
     drawVersusChart();
   }
   function drawVersusChart() {
     const box = $('vsChart'); if (!box) return;
-    const d = S.log.filter(e => !e.replay && e.result !== 'T' && (e.pred || e.road));
+    const d = S.log.filter(e => !e.replay && !e.joined && e.result !== 'T' && e.pred);
     if (d.length < 2) { box.innerHTML = '<p class="muted small">The chart appears after a few decided hands.</p>'; return; }
     // running win rate after each decided hand
-    let mw = 0, mn = 0, rw = 0, rn = 0;
+    let mw = 0, mn = 0;
     const pts = d.map((e, i) => {
-      if (e.pred) { mn++; if (e.pred.side === e.result) mw++; }
-      if (e.road) { rn++; if (e.road.side === e.result) rw++; }
-      return { i, m: mn ? mw / mn : null, r: rn ? rw / rn : null, e };
+      mn++; if (e.pred.side === e.result) mw++;
+      return { i, m: mw / mn, e };
     });
     const W = box.clientWidth || 400, H = 150, pl = 34, pr = 96, pt = 10, pb = 20;
-    const vals = pts.flatMap(p => [p.m, p.r]).filter(v => v != null);
+    const vals = pts.map(p => p.m);
     let lo = Math.min(0.4, ...vals), hi = Math.max(0.6, ...vals);
     lo = Math.floor(lo * 10) / 10; hi = Math.ceil(hi * 10) / 10;
     const x = i => pl + (pts.length === 1 ? 0 : i / (pts.length - 1)) * (W - pl - pr);
@@ -1103,17 +1119,14 @@
     const path = key => pts.filter(p => p[key] != null).map((p, j) => `${j ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p[key]).toFixed(1)}`).join('');
     const ticks = []; for (let v = lo; v <= hi + 1e-9; v += 0.1) ticks.push(+v.toFixed(1));
     const last = pts[pts.length - 1];
-    // direct end labels, nudged apart if they would overlap
-    let ym = last.m != null ? y(last.m) : null, yr = last.r != null ? y(last.r) : null;
-    if (ym != null && yr != null && Math.abs(ym - yr) < 13) { const mid = (ym + yr) / 2; if (ym <= yr) { ym = mid - 7; yr = mid + 7; } else { ym = mid + 7; yr = mid - 7; } }
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running win rate of the model pick and the roadmap pick">
+    const ym = y(last.m);
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running win rate of pattern-aware model forecasts">
       ${ticks.map(v => `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${pl - 6}" y="${y(v) + 3.5}" text-anchor="end">${Math.round(v * 100)}%</text>`).join('')}
       <line class="ref" x1="${pl}" x2="${W - pr}" y1="${y(0.5)}" y2="${y(0.5)}"/>
       <text class="axis" x="${pl}" y="${H - 4}">hand 1</text><text class="axis" x="${W - pr}" y="${H - 4}" text-anchor="end">${pts.length} decided hands</text>
-      <path class="ln road" d="${path('r')}"/><path class="ln model" d="${path('m')}"/>
-      ${ym != null ? `<text class="lbl" x="${W - pr + 6}" y="${ym + 4}">Model ${pct(last.m, 0)}</text>` : ''}
-      ${yr != null ? `<text class="lbl" x="${W - pr + 6}" y="${yr + 4}">Roadmap ${pct(last.r, 0)}</text>` : ''}
-      <g id="vsHover" style="display:none"><line class="cross" y1="${pt}" y2="${H - pb}"/><circle class="dot model" r="4"/><circle class="dot road" r="4"/></g>
+      <path class="ln model" d="${path('m')}"/>
+      <text class="lbl" x="${W - pr + 6}" y="${ym + 4}">Model ${pct(last.m, 0)}</text>
+      <g id="vsHover" style="display:none"><line class="cross" y1="${pt}" y2="${H - pb}"/><circle class="dot model" r="4"/></g>
       <rect x="${pl}" y="0" width="${W - pl - pr}" height="${H}" fill="transparent" id="vsHit"/>
     </svg><div class="chart-tip" id="vsTip" hidden></div>`;
     const hit = $('vsHit'), g = $('vsHover'), tip = $('vsTip');
@@ -1124,15 +1137,14 @@
       g.style.display = '';
       const cx = x(p.i);
       g.querySelector('line').setAttribute('x1', cx); g.querySelector('line').setAttribute('x2', cx);
-      const [dm, dr] = g.querySelectorAll('circle');
+      const dm = g.querySelector('circle');
       if (p.m != null) { dm.setAttribute('cx', cx); dm.setAttribute('cy', y(p.m)); dm.style.display = ''; } else dm.style.display = 'none';
-      if (p.r != null) { dr.setAttribute('cx', cx); dr.setAttribute('cy', y(p.r)); dr.style.display = ''; } else dr.style.display = 'none';
       tip.hidden = false;
-      const ty = Math.min(p.m != null ? y(p.m) : H, p.r != null ? y(p.r) : H);
+      const ty = p.m != null ? y(p.m) : H;
       tip.style.left = Math.max(80, Math.min(W - 80, cx)) + 'px';
       tip.style.top = (ty - 8) + 'px';
       tip.innerHTML = `Shoe ${p.e.shoe} · hand ${p.e.hand} · result ${NAMES[p.e.result]}<br>
-        <i class="key model"></i> Model ${p.m == null ? '–' : pct(p.m)} &nbsp; <i class="key road"></i> Roadmap ${p.r == null ? '–' : pct(p.r)}`;
+        <i class="key model"></i> Model ${p.m == null ? '–' : pct(p.m)}`;
     };
     hit.onmouseleave = () => { g.style.display = 'none'; tip.hidden = true; };
   }
@@ -1240,7 +1252,6 @@
     if (S.pending) { computePrediction(); renderPrediction(); }
     scheduleSave();
   };
-  $('headlinePick').onchange = e => { S.settings.headline = e.target.value; renderPrediction(); scheduleSave(); };
   $('scanSpeed').onchange = e => { S.settings.interval = +e.target.value; if (S.timer) startLoop(); scheduleSave(); };
   $('showFrames').onchange = e => { S.settings.frames = e.target.checked; drawFrames(); scheduleSave(); };
   $('btnRefind').onclick = () => { delete site().roadBox; S.sig = null; S.roadChoice = 0; scheduleSave(); toast('Looking for the roadmap again…'); };
@@ -1324,9 +1335,9 @@
   };
 
   $('btnExport').onclick = () => {
-    const head = 'time,site,shoe,hand,predicted,confidence,strong_lean,math_banker,roadmap_pick,roadmap_reason,result,outcome,player_cards,banker_cards';
-    const rows = S.log.map(e => [new Date(e.t).toISOString(), e.site, e.shoe, e.hand, e.pred ? e.pred.side : '', e.pred ? e.pred.conf : '',
-      e.pred ? e.pred.sure : '', e.pred ? e.pred.mathQ : '', e.road ? e.road.side : '', e.road ? '"' + e.road.reason + '"' : '', e.result, e.result === 'T' || !e.pred ? 'push' : e.correct ? 'won' : 'lost',
+    const head = 'time,site,shoe,hand,forecast,confidence,strong_lean,shoe_math_banker,result,outcome,player_cards,banker_cards';
+    const rows = S.log.map(e => [new Date(e.t).toISOString(), e.site, e.shoe, e.hand, e.pred && !e.joined && !e.replay ? e.pred.side : '', e.pred && !e.joined && !e.replay ? e.pred.conf : '',
+      e.pred && !e.joined && !e.replay ? e.pred.sure : '', e.pred && !e.joined && !e.replay ? e.pred.mathQ : '', e.result, e.result === 'T' || !e.pred || e.joined || e.replay ? 'push' : e.correct ? 'won' : 'lost',
       e.cards ? e.cards.P.join(' ') : '', e.cards ? e.cards.B.join(' ') : ''].join(','));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([head + '\n' + rows.join('\n')], { type: 'text/csv' }));
@@ -1373,7 +1384,6 @@
     await loadAll();
     S.seeds = makeSeeds();
     $('sureRange').value = S.settings.sure; $('sureVal').textContent = pct(S.settings.sure, 0);
-    $('headlinePick').value = S.settings.headline || 'roadmap';
     $('scanSpeed').value = String(S.settings.interval);
     $('showFrames').checked = S.settings.frames;
     if (S.lastUrl) $('startInput').value = S.lastUrl;

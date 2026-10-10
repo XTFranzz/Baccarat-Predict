@@ -31,21 +31,20 @@ npm start
 ## What you see
 
 - **Setup steps.** Game link, roadmap, and cards, each with a status light.
-- **Main pick.** By default the Roadmap pattern (it follows streaks, ping-pong and column patterns, so it changes between Banker and Player); switch to the Model in Settings and tools. The other pick is always shown underneath.
-- **Next hand.** The model's predicted side, how likely it is to win, and whether it clears your strong-lean level. Nothing is ever sure. It also shows the expected return of each bet from the cards left in the shoe, and flags the rare hands where a bet has a positive edge.
-- **Roadmap read.** A separate Roadmap pick, which rides streaks, follows ping-pong, repeats Big Road column patterns, or follows the derived roads, with the reason. It also shows the current streak or ping-pong and how often a run that long really continued in simulated shoes.
-- **Statistics.** The model pick and the Roadmap pick side by side: picks, won, lost, win rate, last 20, and current run, plus a chart of each one's running win rate against the 50% coin-flip line.
+- **Next hand.** The system compares exact shoe math, a learned model, and the roadmap pattern/history. It shows each source's position and why it votes or abstains. The overall choice requires two independent sources to agree on a positive-return side; otherwise it says “No reliable edge.” The learned model only gets a vote after at least 500 prospective live forecasts and a clear improvement over the math baseline; the roadmap only gets a vote after at least 100 settled picks at 55% accuracy. This is an experimental filter, not a guarantee or betting advice.
+- **Roadmap read.** Shows the current streak and ping-pong plus the roadmap pattern hypothesis and its historical hit rate. These patterns are evidence to inspect, not proof that the next hand is predictable.
+- **Statistics.** Tracks forecasts made before live hands, with win rate, recent results, and a chart. Joined mid-shoe hands, replayed/corrected hands, and ties are not scored. The system decision stays “No reliable edge” until the required data is available.
 - **Shoe.** Shoe number, cards seen, and cards left. It also shows the Bead Plate, Big Road, Big Eye Boy, Small Road, and Cockroach Pig, with the Banker ask and Player ask.
-- **Learning.** Accuracy of all predictions and of sure picks, recent accuracy, and whether learning is beating the plain card math. Bars show what each signal has learned, and a table checks whether the model is honest about how sure it is.
-- **Hand log.** Every hand with the result, the model pick and the Roadmap pick each marked won or lost, and the cards. Show the last 20 hands, this shoe, or everything.
+- **Learning.** Shows forecast accuracy and model-vs-math comparison. The experimental model contributes to the system choice only after prospective live results show a clear improvement over the shoe-odds baseline.
+- **Hand log.** Results, the model forecast made before each live hand, and any cards read. Hands already present when joining are shown without a pick. Show the last 20 hands, this shoe, or everything.
 
 ## How it works
 
 - **Roadmap.** The app looks for a grid of same-size red and blue marks and prefers the Bead Plate. It reads new results as they appear, follows the roadmap when it scrolls, and treats an emptied roadmap as a shuffle.
 - **New shoe.** After a shuffle the card count restarts. If you join mid-shoe, the count uses only the cards seen since you joined, which is still correct, and becomes complete from the next shuffle.
 - **Cards.** The app finds the white card faces and reads the rank in each corner. Every hand is checked against the official drawing rules. If a reading breaks the rules, the app tries the next-closest ranks to find the legal hand that matches the roadmap winner.
-- **Odds.** Before each hand, the app deals the remaining cards 80,000 times to get the true Banker, Player, and Tie chances.
-- **Learning.** A logistic model starts exactly at the card math, with every pattern signal at zero. After each result it adjusts slightly toward whatever actually predicted it. The signals are the last winner, streaks, ping-pong, hot side, Big Road columns, and the derived roads. A pull back toward the math stops it chasing lucky runs. If patterns carry no signal, as the simulation shows for real shoes, their weights stay near zero.
+- **Odds.** The app enumerates the legal next-hand draws without replacement from the tracked card-value counts and calculates Banker, Player, and Tie probabilities exactly. Before any cards are tracked it uses standard 8-deck odds. After joining mid-shoe, cards dealt before joining are unknown, so the calculation is exact for the tracked counts but the shoe composition is partial until the next shuffle.
+- **Learning.** A logistic model updates after each eligible live non-tie result using card odds, the last winner, streak, ping-pong, recent side frequency, Big Road columns, and derived roads. It is experimental: roadmap patterns may have no predictive signal, and results do not promise improved accuracy or profit.
 
 **Using it on another computer.** Cloning the repo gives the code only. To bring what the app has learned, press **Export learning data** (Settings and tools). This writes `learning-data/baccarat-learning.json` into the project folder. Commit and push it, pull on the other computer, and press **Import learning data** there. Hands are merged without duplicates, and the model that has learned from more live hands is kept.
 

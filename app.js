@@ -752,35 +752,54 @@
 
   // ---- Adjust mode: drag and resize the yellow roadmap box; the app reads only inside it.
   let adj = null;
+  let adjustGeneration = 0;
   function openAdjust(mode = 'roadmap') {
     if (!S.frame) return toast('Open the game first.');
     const fromCompact = document.body.classList.contains('compact');
     if (fromCompact) setCompact(false);
-    const area = $('gameArea').getBoundingClientRect();
-    let css;
-    if (mode === 'cards' && site().cards && site().cards.zone) css = imgToCss(zonePx());
-    else if (mode === 'roadmap' && site().roadBox) css = imgToCss(boxToImg(site().roadBox, S.frame));
-    else if (mode === 'cards' && S.cards.box) {
-      const b = imgToCss(S.cards.box), pad = Math.max(24, Math.min(b.width, b.height) * 0.7);
-      css = { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
-    }
-    else if (mode === 'roadmap' && S.roadBox) { const b = imgToCss(S.roadBox); css = { x: b.x - 6, y: b.y - 6, width: b.width + 12, height: b.height + 12 }; }
-    else if (mode === 'cards') css = { x: area.width * 0.28, y: area.height * 0.38, width: area.width * 0.44, height: area.height * 0.42 };
-    else css = { x: area.width / 2 - 160, y: area.height - 160, width: 320, height: 110 };
-    adj = { css, fromCompact, holder: { sig: null }, mode };
+    const generation = ++adjustGeneration;
+    adj = { css: null, fromCompact, holder: { sig: null }, mode };
     $('adjust').classList.toggle('adjust-cards', mode === 'cards');
-    $('adjust .adjust-title').textContent = mode === 'cards' ? 'Put the green box over the dealt cards'
+    $('adjust').style.zIndex = '20';
+    $('adjust').querySelector('.adjust-title').textContent = mode === 'cards' ? 'Put the green box over the dealt cards'
       : 'Put the yellow box over one roadmap';
-    $('adjust .adjust-bar .muted').textContent = mode === 'cards'
+    $('adjust').querySelector('.adjust-bar .muted').textContent = mode === 'cards'
       ? 'Include the Player and Banker card faces. Drag to move; pull a corner to resize. The preview shows detected cards.'
       : 'Drag it to move. Pull a corner to resize. The Big Road shows the whole shoe; the Bead Plate often shows only the latest hands.';
-    $('adjustBox span').textContent = mode === 'cards' ? 'Cards' : 'Roadmap';
+    $('adjustBox').querySelector('span').textContent = mode === 'cards' ? 'Cards' : 'Roadmap';
     $('adjustAuto').textContent = mode === 'cards' ? 'Auto-find cards' : 'Let the app find it';
+    $('adjustRead').textContent = mode === 'cards' ? 'Green card box is being shown…' : '';
     $('adjust').hidden = false;
-    placeAdjust();
+    $('adjustBox').style.zIndex = '3';
+    const initialize = () => {
+      if (!adj || generation !== adjustGeneration) return;
+      const area = $('gameArea').getBoundingClientRect();
+      if (area.width < 100 || area.height < 100) {
+        toast('The game view is too small to show the adjustment box. Restore the full view and try again.');
+        return;
+      }
+      let css;
+      if (mode === 'cards' && site().cards && site().cards.zone) css = imgToCss(zonePx());
+      else if (mode === 'roadmap' && site().roadBox) css = imgToCss(boxToImg(site().roadBox, S.frame));
+      else if (mode === 'cards' && S.cards.box) {
+        const b = imgToCss(S.cards.box), pad = Math.max(24, Math.min(b.width, b.height) * 0.7);
+        css = { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
+      } else if (mode === 'roadmap' && S.roadBox) {
+        const b = imgToCss(S.roadBox);
+        css = { x: b.x - 6, y: b.y - 6, width: b.width + 12, height: b.height + 12 };
+      } else if (mode === 'cards') {
+        css = { x: area.width * 0.28, y: area.height * 0.38, width: area.width * 0.44, height: area.height * 0.42 };
+      } else css = { x: area.width / 2 - 160, y: area.height - 160, width: 320, height: 110 };
+      adj.css = css;
+      placeAdjust();
+    };
+    if (fromCompact) requestAnimationFrame(() => requestAnimationFrame(initialize));
+    else initialize();
   }
   function placeAdjust() {
+    if (!adj || !adj.css) return;
     const area = $('gameArea').getBoundingClientRect(), b = adj.css;
+    if (area.width < 30 || area.height < 20) return;
     b.width = Math.max(30, Math.min(b.width, area.width)); b.height = Math.max(20, Math.min(b.height, area.height));
     b.x = Math.max(0, Math.min(b.x, area.width - b.width)); b.y = Math.max(0, Math.min(b.y, area.height - b.height));
     place($('adjustBox'), b);
@@ -830,6 +849,7 @@
     box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
   })();
   function closeAdjust() {
+    adjustGeneration++;
     $('adjust').hidden = true;
     if (adj && adj.fromCompact) setCompact(true);
     adj = null;
@@ -921,7 +941,8 @@
     const toCss = imgToCss;
     const rf = $('roadFrame'), cf = $('cardFrame');
     rf.hidden = !(show && S.roadBox); if (!rf.hidden) place(rf, toCss(S.roadBox));
-    cf.hidden = !(show && S.cards.box); if (!cf.hidden) place(cf, toCss(S.cards.box));
+    cf.hidden = !(S.cards.box && (show || !!(site().cards && site().cards.zone)));
+    if (!cf.hidden) place(cf, toCss(S.cards.box));
   }
 
   let toastTimer = null;

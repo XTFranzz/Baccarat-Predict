@@ -108,6 +108,19 @@ module.exports = async function selftest(win) {
     if (!joinScores.count || joinScores.invalidPicks || joinScores.scored) throw new Error('mid-shoe join hands were incorrectly predicted or scored: ' + JSON.stringify(joinScores));
     log('joined hands excluded from picks and scores', JSON.stringify(joinScores), 'OK');
 
+    await js(`window.__bp.openAdjust('cards'); true`);
+    await wait(100);
+    const cardAdjust = await js(`(() => {
+      const panel = document.getElementById('adjust'), box = document.getElementById('adjustBox'), r = box.getBoundingClientRect();
+      return { hidden: panel.hidden, cardsMode: panel.classList.contains('adjust-cards'), width: r.width, height: r.height,
+        visibility: getComputedStyle(box).visibility, display: getComputedStyle(box).display };
+    })()`);
+    if (cardAdjust.hidden || !cardAdjust.cardsMode || cardAdjust.width < 30 || cardAdjust.height < 20 ||
+      cardAdjust.visibility === 'hidden' || cardAdjust.display === 'none')
+      throw new Error('card adjustment box was not visible: ' + JSON.stringify(cardAdjust));
+    log('card adjustment box forced visible', JSON.stringify(cardAdjust), 'OK');
+    await js("document.getElementById('adjustCancel').click(); true");
+
     if (process.env.BP_BOX) {
       // Use the adjustable box: open adjust mode (starts around the detected road), screenshot, confirm.
       await js('window.__bp.openAdjust(); true');

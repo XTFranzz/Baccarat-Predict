@@ -183,7 +183,8 @@ assert.strictEqual(oneHand.handsScored, 1, 'a single decided hand is scored once
 assert(Math.abs(evalBase.logLoss - evalLive.logLoss) < 1e-12,
   'the first hand is predicted by an untrained model, so it cannot differ from the card odds: no result leaks into its own prediction');
 assert.strictEqual(E.run([{ site: 's', shoe: 1, hand: 1, result: 'T' }]).handsScored, 0, 'ties are excluded from scoring');
-const tenB = E.run(Array.from({ length: 10 }, (_, i) => ({ site: 's', shoe: 1, hand: i + 1, result: 'B' })));
+// Ten single-hand shoes: Banker wins each, with no run long enough to look like a misreading.
+const tenB = E.run(Array.from({ length: 10 }, (_, i) => ({ site: 's', shoe: i + 1, hand: 1, result: 'B' })));
 assert.strictEqual(tenB.models.find(m => m.key === 'baseline').accuracy, 1, 'card odds call every hand of an all-Banker log correctly');
 assert(Math.abs(tenB.models.find(m => m.key === 'baseline').returnPerBet - 0.95) < 1e-12, 'Banker wins pay 0.95 after commission');
 // Cards logged against a hand are removed from the shoe for later hands, as the live app does.

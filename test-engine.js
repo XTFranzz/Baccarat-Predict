@@ -175,6 +175,31 @@ assert(alone && Math.abs(beside.dist - alone.dist) < 1e-9,
   'a suit printed beside the rank changes nothing about the rank that is read');
 assert(beside.feat.parts === 1, 'a suit beside the rank is not counted as a second digit');
 
+// ---- walk-forward model test ----
+const E = require('./evaluate.js');
+const oneHand = E.run([{ site: 's', shoe: 1, hand: 1, result: 'B' }]);
+const [evalBase, evalLive] = [oneHand.models.find(m => m.key === 'baseline'), oneHand.models.find(m => m.key === 'live')];
+assert.strictEqual(oneHand.handsScored, 1, 'a single decided hand is scored once');
+assert(Math.abs(evalBase.logLoss - evalLive.logLoss) < 1e-12,
+  'the first hand is predicted by an untrained model, so it cannot differ from the card odds: no result leaks into its own prediction');
+assert.strictEqual(E.run([{ site: 's', shoe: 1, hand: 1, result: 'T' }]).handsScored, 0, 'ties are excluded from scoring');
+const tenB = E.run(Array.from({ length: 10 }, (_, i) => ({ site: 's', shoe: 1, hand: i + 1, result: 'B' })));
+assert.strictEqual(tenB.models.find(m => m.key === 'baseline').accuracy, 1, 'card odds call every hand of an all-Banker log correctly');
+assert(Math.abs(tenB.models.find(m => m.key === 'baseline').returnPerBet - 0.95) < 1e-12, 'Banker wins pay 0.95 after commission');
+// Cards logged against a hand are removed from the shoe for later hands, as the live app does.
+const withCards = E.run([
+  { site: 's', shoe: 1, hand: 1, result: 'B', cards: { P: ['5', '5'], B: ['9', 'K'] } },
+  { site: 's', shoe: 1, hand: 2, result: 'P' },
+]);
+assert.strictEqual(withCards.withCards, 1, 'hands carrying cards are counted');
+// On shoes dealt at random, neither learned model may beat the exact odds by more than its own noise.
+const noiseRng = B.mulberry32(11), noiseLog = [];
+for (let sh = 1; sh <= 25; sh++) B.dealShoe(noiseRng).forEach((res, i) => noiseLog.push({ site: 's', shoe: sh, hand: i + 1, result: res }));
+const noise = E.run(noiseLog);
+assert(noise.handsScored > 1000, 'the noise check has enough hands to mean something');
+assert(!noise.models.some(m => m.beatsBaseline),
+  'no roadmap model beats the exact card odds on randomly dealt shoes');
+
 const r = B.simulateStrategies(1000, 42);
 const c = r.counts;
 const pct = x => (x * 100).toFixed(2) + '%';

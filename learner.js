@@ -122,14 +122,18 @@
       : null;
     const modelSide = Number.isFinite(modelQ) ? (modelQ >= 0.5 ? 'B' : 'P') : null;
     const modelHasEdge = modelEligible && modelEV[modelSide] > 0.01;
+    // Every unmet condition is named, not just the first: one line that says "shoe tracking is
+    // incomplete" reads like the only thing standing in the way when it rarely is.
+    const missing = [];
+    if (!shoeComplete) missing.push('this shoe was joined in progress, so its remaining cards are unknown');
+    if (!(proofN >= MIN_VALIDATION_HANDS)) missing.push(`${proofN || 0} of ${MIN_VALIDATION_HANDS} prospective hands recorded`);
+    if (!(modelVsMath > MIN_LOGLOSS_GAIN)) missing.push('it has not yet predicted better than plain shoe math');
     votes.push({
       name: 'Live model statistics',
       side: modelHasEdge ? modelSide : null,
-      detail: !shoeComplete ? 'No vote: shoe tracking is incomplete'
-        : proofN < MIN_VALIDATION_HANDS ? `No vote: ${proofN}/${MIN_VALIDATION_HANDS} prospective hands`
-          : modelVsMath <= MIN_LOGLOSS_GAIN ? 'No vote: model has not clearly beaten shoe math'
-            : !modelHasEdge ? `Leans ${nameSide(modelSide)}, but its estimated return is not positive`
-              : `Validated on ${proofN} prospective hands; estimated return ${(modelEV[modelSide] * 100).toFixed(2)}%`,
+      detail: missing.length ? 'No vote: ' + missing.join('; ')
+        : !modelHasEdge ? `Leans ${nameSide(modelSide)}, but its estimated return is not positive`
+          : `Validated on ${proofN} prospective hands; estimated return ${(modelEV[modelSide] * 100).toFixed(2)}%`,
     });
     const roadEligible = Number.isFinite(roadAccuracy) && roadN >= 100 && roadAccuracy >= 0.55 && roadAccuracy > 0.5;
     votes.push({

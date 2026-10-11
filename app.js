@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const B = Baccarat, V = RoadVision, L = Learner;
+  const B = Baccarat, V = RoadVision, L = Learner, E = Evaluator;
   const bridge = window.bridge;
 
   const BASE = { B: 0.458597, P: 0.446247, T: 0.095156 };
@@ -396,6 +396,16 @@
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
   const endsWith = (arr, suf) => suf.length <= arr.length && same(arr.slice(arr.length - suf.length), suf);
 
+  // A mark that appears for a single scan is not a hand. One flickering mark on the Big Road, read as
+  // new each scan, used to append a result every time: that is what produced logged streaks of 23 in a
+  // row, which cannot happen at a real table. New results must now be read the same way twice running.
+  function confirmed(add, histLen) {
+    const key = histLen + ':' + add.join('');
+    if (S.roadPending && S.roadPending === key) { S.roadPending = null; return true; }
+    S.roadPending = key;
+    return false;
+  }
+
   function onRoadRead(seq) {
     const h = S.history;
     if (!seq.length) {
@@ -416,7 +426,7 @@
 
     // After the roadmap was empty: either the same shoe came back with new hands, or a new shoe started.
     if (afterEmpty) {
-      if (seq.length >= h.length && same(seq.slice(0, h.length), h)) { const add = seq.slice(h.length); add.forEach(r => addResult(r, add.length === 1)); return; }
+      if (seq.length >= h.length && same(seq.slice(0, h.length), h)) { const add = seq.slice(h.length); if (confirmed(add, h.length)) add.forEach(r => addResult(r, add.length === 1)); return; }
       if (h.length >= 3) { newShoe(seq, true); return; }
     }
 
@@ -424,7 +434,7 @@
     for (let d = 1; d <= 6 && d <= seq.length; d++) {
       const prefix = seq.slice(0, seq.length - d);
       const fits = prefix.length === h.length ? same(prefix, h) : prefix.length >= 6 && endsWith(h, prefix);
-      if (fits) { seq.slice(-d).forEach(r => addResult(r, d === 1)); return; }
+      if (fits) { const add = seq.slice(-d); if (confirmed(add, h.length)) add.forEach(r => addResult(r, d === 1)); return; }
     }
     // Roadmap shows an older part of the same shoe (scrolled view): ignore.
     if (h.length > seq.length && endsWith(h, seq) && seq.length >= 0.6 * S.maxVisible) return;
@@ -520,6 +530,13 @@
     if (pairable && cardsBelong(st, e)) {
       const fit = resolveFor(st, r);
       if (fit) attachCards(e, fit, st);
+      else e.noCards = 'read a different hand';
+    } else if (!e.joined) {
+      // Say in the log why a hand holds no cards, so a gap can be chased instead of guessed at.
+      e.noCards = !pairable ? 'roadmap caught up late'
+        : !st || st.used ? 'no confirmed reading'
+          : st.shoe !== e.shoe || st.epoch > e.epoch || e.epoch - st.epoch > 1 ? 'reading was another deal'
+            : 'reading did not line up';
     }
     if (S.joining) return; // the caller renders once at the end
     computePrediction();
@@ -530,6 +547,7 @@
 
   function attachCards(entry, st, original) {
     entry.cards = { P: st.pRanks, B: st.bRanks };
+    delete entry.noCards;   // the cards arrived after all
     if (st.corrected) entry.cards.corrected = true;
     for (const r of st.pRanks.concat(st.bRanks)) {
       const v = B.rankValue(r);
@@ -639,7 +657,10 @@
     const best = Object.entries(byResult).sort((a, b) => a[1].cost - b[1].cost)[0];
     const pRanks = best ? best[1].pRanks : P.map(c => c.rank), bRanks = best ? best[1].bRanks : Bk.map(c => c.rank);
     const result = best ? best[0] : null;
-    const key = 'P:' + P.map(c => c.rank).sort().join(',') + '|B:' + Bk.map(c => c.rank).sort().join(',') + '#' + cards.length;
+    // The hand is identified by what would be recorded, not by each card's first guess. Two near-tied
+    // guesses on one card flip back and forth between scans; the hand they both correct to does not,
+    // and holding that still is what lets a hand be confirmed by a second look.
+    const key = 'P:' + pRanks.slice().sort().join(',') + '|B:' + bRanks.slice().sort().join(',') + '#' + cards.length;
     const readable = cards.every(c => c.dist <= 0.2 && c.margin >= 0.02);
     // Confident = every card is a clear match that stood on its own, and the hand needed no correction
     // to obey the drawing rules. Such a hand is taken from a single scan, which is all a fast table
@@ -709,7 +730,9 @@
         setStep('Cards', 'busy', `Read Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; waiting for the matching roadmap result.` + cardsProgress());
       tryAttachLatest();
     } else {
-      setStep('Cards', 'busy', `Cards visible: Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; waiting for the deal to finish.` + cardsProgress());
+      // Say which of the two it is actually waiting for, so a hand that sits here is not a mystery.
+      const why = hand.valid ? 'checking the same reading once more' : 'waiting for the deal to finish';
+      setStep('Cards', 'busy', `Cards visible: Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; ${why}.` + cardsProgress());
     }
   }
 
@@ -1042,12 +1065,12 @@
     const plusEv = ['B', 'P', 'T'].filter(s => p.ev[s] > 0);
     el.innerHTML = `
       <div class="big">
-        <div class="side-chip ${side || modelSide}">${side || modelSide}</div>
+        <div class="side-chip ${side || 'none'}">${side || '–'}</div>
         <div>
-          <div class="title">${side ? `Reliable next hand: ${NAMES[side]}` : `Likely next hand: ${NAMES[modelSide]}`}</div>
+          <div class="title">${side ? `Reliable next hand: ${NAMES[side]}` : 'No bet worth making on this hand'}</div>
           <div class="muted small">${side
             ? `${p.decision.reason}. This is still an estimate, not a guarantee.`
-            : `No reliable pick: ${p.decision.reason}. Best model estimate is ${pct(conf)} conditional on no tie.`}</div>
+            : `${p.decision.reason}. The model leans ${NAMES[modelSide]} at ${pct(conf)} conditional on no tie, which is not a reason to bet.`}</div>
         </div>
       </div>
       ${road ? `<div class="note">Roadmap pattern view: <b>${NAMES[road.side]}</b> — ${road.reason}. Historical pattern accuracy: ${liveStats.roadAccuracy == null ? '–' : pct(liveStats.roadAccuracy)} of ${liveStats.roadN} settled picks; this is not proof of an edge.</div>` : ''}
@@ -1184,10 +1207,34 @@
           : e.replay ? ' <small class="muted" title="Already visible when detected, re-read, or corrected: not scored">unscored</small>' : ''}</td>
         <td><span class="res ${e.result}">${e.result}</span></td>
         <td>${!e.joined && !e.replay && e.pred ? `<span class="res ${e.pred.side}">${e.pred.side}</span> ${verdict(e.pred.side, e.result)} <small class="muted">${pct(e.pred.conf, 0)}${e.pred.sure ? ' ★' : ''}</small>` : '–'}</td>
-        <td class="muted">${e.cards ? `${e.cards.P.join(' ')} | ${e.cards.B.join(' ')}` : '–'}</td></tr>`).join('')}
+        <td class="muted">${e.cards ? `${e.cards.P.join(' ')} | ${e.cards.B.join(' ')}`
+          : e.noCards ? `<small class="muted" title="Why this hand's cards were not counted">${e.noCards}</small>` : '–'}</td></tr>`).join('')}
     </table>`;
   }
   $('logRange').onchange = renderLog;
+
+  // Walk-forward model test over everything logged so far.
+  $('btnEvaluate').onclick = () => {
+    const view = $('evalView');
+    view.innerHTML = 'Replaying every logged hand…';
+    setTimeout(() => {
+      const res = E.run(S.log);
+      if (!res.handsScored) { view.innerHTML = '<span class="muted">No decided hands logged yet.</span>'; return; }
+      const row = m => `<tr>
+        <td>${m.name}</td><td>${pct(m.accuracy)}</td><td>${m.logLoss.toFixed(4)}</td><td>${m.brier.toFixed(4)}</td>
+        <td class="${m.returnPerBet > 0 ? 'pos' : 'neg'}">${signPct(m.returnPerBet)}</td>
+        <td>${m.vsBaseline ? `${m.vsBaseline.gain >= 0 ? '+' : '−'}${Math.abs(m.vsBaseline.gain).toFixed(4)} <small class="muted">(${m.vsBaseline.lo.toFixed(4)} to ${m.vsBaseline.hi.toFixed(4)})</small>` : '–'}</td></tr>`;
+      const cal = res.models.map(m => `<div class="muted small">${m.name}: ${m.buckets.sort((a, b) => a.band.localeCompare(b.band))
+        .map(b => `${b.band} claimed → ${pct(b.actual)} actual over ${b.n}`).join(' · ')}</div>`).join('');
+      view.innerHTML = `<table><tr><th>Model</th><th>Accuracy</th><th>Log loss</th><th>Brier</th><th>Return/bet</th><th>Gain over card odds (95% range)</th></tr>
+          ${res.models.map(row).join('')}</table>
+        <div class="note"><b>${E.verdict(res)}</b></div>
+        <div class="note">${res.handsScored} decided hands across ${res.shoes} shoes (${res.ties} ties excluded, ${res.withCards} hands had their cards read).
+          Each hand was predicted before its result was used for training, so none of these scores include a hand the model had already seen.
+          A gain whose range crosses zero is indistinguishable from luck.</div>
+        ${cal}`;
+    }, 20);
+  };
 
   // Score only forecasts actually shown before a live hand.
   function scoreOf(entries, pick) {

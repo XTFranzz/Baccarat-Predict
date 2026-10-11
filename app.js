@@ -396,14 +396,16 @@
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
   const endsWith = (arr, suf) => suf.length <= arr.length && same(arr.slice(arr.length - suf.length), suf);
 
-  // A mark that appears for a single scan is not a hand. One flickering mark on the Big Road, read as
-  // new each scan, used to append a result every time: that is what produced logged streaks of 23 in a
-  // row, which cannot happen at a real table. New results must now be read the same way twice running.
-  function confirmed(add, histLen) {
-    const key = histLen + ':' + add.join('');
-    if (S.roadPending && S.roadPending === key) { S.roadPending = null; return true; }
-    S.roadPending = key;
-    return false;
+  // A mark that shows up for a single scan is a flicker, not a hand: reading one as new every scan is
+  // what produced logged streaks of 23 in a row. So only the part two readings in a row agree on may
+  // be appended. Confirming each result on its own (rather than a whole batch at once) means the road
+  // growing again in the meantime never stalls it: every hand is logged one scan after it appears.
+  function agreedSoFar(seq) {
+    const prev = S.lastRoad || [];
+    S.lastRoad = seq;
+    let n = 0;
+    while (n < seq.length && n < prev.length && seq[n] === prev[n]) n++;
+    return seq.slice(0, n);
   }
 
   function onRoadRead(seq) {
@@ -420,22 +422,27 @@
     const afterEmpty = S.possibleShuffle;
     S.emptyScans = 0; S.possibleShuffle = false;
     S.maxVisible = Math.max(S.maxVisible, seq.length);
+    // Results are only appended from the part this reading and the one before it agree on.
+    const seen = agreedSoFar(seq);
     if (same(seq, h)) return; // the same roadmap came back (it was hidden, not shuffled)
 
     if (!S.joined) { joinShoe(seq); return; }
 
     // After the roadmap was empty: either the same shoe came back with new hands, or a new shoe started.
     if (afterEmpty) {
-      if (seq.length >= h.length && same(seq.slice(0, h.length), h)) { const add = seq.slice(h.length); if (confirmed(add, h.length)) add.forEach(r => addResult(r, add.length === 1)); return; }
+      if (seen.length >= h.length && same(seen.slice(0, h.length), h)) { const add = seen.slice(h.length); if (add.length) add.forEach(r => addResult(r, add.length === 1)); return; }
+      if (seq.length >= h.length && same(seq.slice(0, h.length), h)) return;   // new hands, not confirmed yet
       if (h.length >= 3) { newShoe(seq, true); return; }
     }
 
     // New hands appended (also handles a full roadmap that scrolled left).
-    for (let d = 1; d <= 6 && d <= seq.length; d++) {
-      const prefix = seq.slice(0, seq.length - d);
+    for (let d = 1; d <= 6 && d <= seen.length; d++) {
+      const prefix = seen.slice(0, seen.length - d);
       const fits = prefix.length === h.length ? same(prefix, h) : prefix.length >= 6 && endsWith(h, prefix);
-      if (fits) { const add = seq.slice(-d); if (confirmed(add, h.length)) add.forEach(r => addResult(r, d === 1)); return; }
+      if (fits) { seen.slice(-d).forEach(r => addResult(r, d === 1)); return; }
     }
+    // The newest marks have only been read once so far: wait for the next scan to confirm them.
+    if (seq.length > seen.length && seen.length >= h.length && same(seen.slice(0, h.length), h)) return;
     // Roadmap shows an older part of the same shoe (scrolled view): ignore.
     if (h.length > seq.length && endsWith(h, seq) && seq.length >= 0.6 * S.maxVisible) return;
 
@@ -509,7 +516,10 @@
   function addResult(r, live = true, pairable = live) {
     const p = S.pending;
     const e = { t: Date.now(), epoch: S.cards.epoch, site: S.host, shoe: S.shoe.id, hand: S.history.length + 1, result: r, cards: null,
+      // bet = the side the evidence gate actually recommended, or null when it recommended nothing.
+      // Without it the log cannot tell a bet the app stood behind from the model merely leaning.
       pred: live && !S.joining && p ? { side: p.side, q: +p.q.toFixed(8), mathQ: +p.mathQ.toFixed(8),
+        bet: (p.decision && p.decision.side) || null,
         sure: p.sure, conf: +p.conf.toFixed(8), modelQ: +p.modelQ.toFixed(8), oddsVersion: 2 } : null,
       road: live && !S.joining && p && p.road && p.road.side ? { side: p.road.side, reason: p.road.reason } : null };
     if (!live) e.replay = true;
@@ -1193,11 +1203,14 @@
       }
       return t;
     };
-    const tm = tally(e => e.pred && e.pred.side);
+    // Only hands the evidence gate actually recommended count as bets. The model's lean is shown per
+    // hand for interest, but scoring it here would report a win rate for bets never recommended.
+    const tm = tally(e => e.pred && e.pred.bet);
+    const lean = tally(e => e.pred && e.pred.side);
     const line = (name, t) => `<tr><td>${name}</td><td class="pos">${t.won}</td><td class="neg">${t.lost}</td><td>${t.push}</td><td>${t.none}</td>
       <td><b>${t.won + t.lost ? pct(t.won / (t.won + t.lost), 0) : '–'}</b></td></tr>`;
     const summary = `<table class="log-sum"><tr><th>Out of ${rows.length} hands</th><th>Won</th><th>Lost</th><th>Push</th><th>No pick</th><th>Win rate</th></tr>
-      ${line('Forecast', tm)}</table>
+      ${line('Recommended bets', tm)}${line('Model lean (not a bet)', lean)}</table>
       <p class="note">Joined and replayed hands are not scored. Push = Tie (bet returned). Win rate = won ÷ (won + lost).</p>`;
     const verdict = (side, result) => !side ? '' : result === 'T' ? '<span class="muted">push</span>'
       : side === result ? '<span class="mark-ok" title="won">✓</span>' : '<span class="mark-bad" title="lost">✗</span>';

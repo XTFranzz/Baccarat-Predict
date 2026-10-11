@@ -216,8 +216,9 @@ module.exports = async function selftest(win) {
         roadmapComparisons: forecasts.filter(e => e.road).length,
         headline: headline };
     })()`);
+    // The headline names a side only when the evidence gate passed; otherwise it says there is no bet.
     if (forecastCheck.badSides || forecastCheck.missingModelProbability || !forecastCheck.roadmapComparisons ||
-        !/^(Reliable|Likely) next hand: (Banker|Player)$/.test(forecastCheck.headline))
+        !/^(Reliable next hand: (Banker|Player)|No bet worth making on this hand)$/.test(forecastCheck.headline))
       throw new Error('logged forecast or displayed next-hand headline is invalid: ' + JSON.stringify(forecastCheck));
     log('pattern-aware model forecasts', JSON.stringify(forecastCheck), 'OK; model hands', await js('window.__bp.S.model.n'));
 

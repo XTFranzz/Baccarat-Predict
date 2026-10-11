@@ -39,6 +39,7 @@ module.exports = async function selftest(win) {
       win.close();
       return;
     }
+    const interval = +(process.env.BP_INTERVAL || 1000);
     const params = 'start=20&hands=26&cycle=' + (process.env.BP_CYCLE || 4000) + '&shuffle=7000&seed=' + (process.env.BP_SEED || 77) + (process.env.BP_BEAD === '0' ? '&bead=0' : '') + (process.env.BP_ZOOM ? '&zoom=' + process.env.BP_ZOOM : '');
     const url = pathToFileURL(path.join(__dirname, 'test', 'fake-table.html')).href + '?' + params;
     let guest;
@@ -52,7 +53,7 @@ module.exports = async function selftest(win) {
       guest = fake.webContents;
       await wait(800);
       const started = await js(`(async () => {
-        window.__bp.S.settings.interval = 1000;
+        window.__bp.S.settings.interval = ${interval};
         await window.__bp.openPicker();
         const s = window.__bp.S.sources.find(x => x.name.includes('Fake Live Baccarat'));
         if (!s) return 'window not found among: ' + window.__bp.S.sources.map(x => x.name).join(' | ');
@@ -66,7 +67,7 @@ module.exports = async function selftest(win) {
         log('state', await js(`JSON.stringify({ mode: window.__bp.S.mode, vw: document.getElementById('shareVideo').videoWidth, vh: document.getElementById('shareVideo').videoHeight, start: document.getElementById('startScreen').hidden, frame: window.__bp.S.frame && window.__bp.S.frame.width, ready: window.__bp.ready })`));
       }
     } else {
-      await js(`window.__bp.S.settings.interval = 1000; window.__bp.openUrl(${JSON.stringify(url)}); true`);
+      await js(`window.__bp.S.settings.interval = ${interval}; window.__bp.openUrl(${JSON.stringify(url)}); true`);
       await until('table loaded', async () => (guest = webContents.getAllWebContents().find(w => w.getType() === 'webview' && w.getURL().includes('fake-table'))), 15000);
     }
     const T = code => guest.executeJavaScript(code);
@@ -152,6 +153,19 @@ module.exports = async function selftest(win) {
     const ok = await js(`!document.getElementById('calibOk').disabled`);
     if (!ok) log('setup hand failed the rules check');
     await js(`document.getElementById(${ok ? "'calibOk'" : "'calibLater'"}).click(); true`);
+    const cardsStatus = await js("document.querySelector('#stepCards span').innerText");
+    if (/tracking every card/i.test(cardsStatus)) throw new Error('card setup status falsely claims live tracking: ' + cardsStatus);
+    log('card setup status reports live state, not setup alone:', cardsStatus);
+    const trained = JSON.parse(await js(`JSON.stringify({
+      ready: window.__bp.cardsReady(),
+      version: window.__bp.site().cards.templateVersion,
+      count: window.__bp.site().cards.templates.length,
+      ranks: [...new Set(window.__bp.site().cards.templates.map(t => t.rank))]
+    })`));
+    // cardsReady() already holds the templates to the version the app reads today.
+    if (!trained.ready || !trained.version || !trained.count)
+      throw new Error('confirmed card ranks were not saved as current site templates: ' + JSON.stringify(trained));
+    log('confirmed ranks saved as site templates:', JSON.stringify(trained));
     const setupDone = Date.now();
 
     // 3. Play through the shuffle into a new shoe
@@ -174,7 +188,7 @@ module.exports = async function selftest(win) {
       total++;
       if (!e.cards) {
         const near = JSON.parse(await js(`JSON.stringify(window.__bp.S.debug.filter(d => Math.abs(d.t - ${e.t}) < 4000))`));
-        log('  no cards on shoe', e.shoe, 'hand', e.hand, 'truth', JSON.stringify({ P: tr.P, B: tr.B }), 'scans:', 'entry epoch', e.epoch, near.map(d => `e${d.epoch} h${d.hist} ` + (d.hand ? `${d.n}c P[${d.hand.p}] B[${d.hand.b}] ${d.hand.valid ? d.hand.res : 'invalid'}` : d.n + 'c none')).join(' / '));
+        log('  no cards on shoe', e.shoe, 'hand', e.hand, 'truth', JSON.stringify({ P: tr.P, B: tr.B }), 'scans:', 'entry epoch', e.epoch, near.map(d => `e${d.epoch} h${d.hist} ` + (d.hand ? `${d.n}c P[${d.hand.p}] B[${d.hand.b}] ${d.hand.readable ? 'readable' : 'unclear'} ${d.hand.valid ? d.hand.res : 'invalid'}` : `${d.n}c unread ${JSON.stringify(d.failed)}`)).join(' / '));
         continue;
       }
       withCards++;

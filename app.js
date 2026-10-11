@@ -19,7 +19,7 @@
     seeds: [],
     history: [], maxVisible: 0, emptyScans: 0, possibleShuffle: false, joined: false,
     shoe: null,
-    cards: { lastKey: null, streak: 0, stable: null, attachedKey: null, calibOpen: false, calibStreak: 0, snoozeUntil: 0, last: null, box: null, epoch: 0, present: false },
+    cards: { lastKey: null, streak: 0, stable: null, openEntry: null, attachedKey: null, calibOpen: false, calibStreak: 0, snoozeUntil: 0, last: null, box: null, epoch: 0, epochAt: 0, staleEpoch: null, present: false },
     model: L.createModel(null), log: [], settings: { sure: 0.55, interval: 1000, frames: true },
     pending: null,
     timer: null, scanning: false, debug: [], events: [],
@@ -80,7 +80,10 @@
     }
   }
   const site = () => (S.sites[S.host] = S.sites[S.host] || {});
-  const cardsReady = () => !!(site().cards && site().cards.ready);
+  // 3: ranks are cut out of the corner as a shape, so templates saved before that no longer compare.
+  const CARD_TEMPLATE_VERSION = 3;
+  const cardsReady = () => !!(site().cards && site().cards.ready &&
+    site().cards.templateVersion >= CARD_TEMPLATE_VERSION);
 
   // ------------------------------------------------------------------ rank templates
   const makeSeeds = () => V.makeSeedTemplates();
@@ -466,15 +469,23 @@
     S.events.push({ t: Date.now(), type: 'new shoe', seq: seq.join(''), sawEmpty, epoch: S.cards.epoch });
     // Seeing the roadmap empty is what proves we are at the start of the shoe (allow one extra mark of read lag).
     S.shoe = freshShoe(nextShoeId(), sawEmpty && seq.length <= 2);
+    // A deal that was already on the table when the roadmap cleared is the old shoe's last hand. It can
+    // still be sitting there as the new shoe is declared, so the whole deal is retired by its epoch —
+    // otherwise the next scan of those same cards would be counted as the new shoe's first hand.
+    if (S.cards.present && (S.cards.epochAt || 0) <= (S.emptyAt || 0)) S.cards.staleEpoch = S.cards.epoch;
     const st = S.cards.stable;
     if (st && !st.used) {
-      if (sawEmpty && st.seenAt > (S.emptyAt || 0)) { st.shoe = S.shoe.id; st.hist = 0; } // first hand of the new shoe
+      // What decides is when the deal began, not when it was last read: cards dealt before the roadmap
+      // cleared are the old shoe's last hand, even if they were still being read after it cleared.
+      if (sawEmpty && st.epochAt > (S.emptyAt || 0)) { st.shoe = S.shoe.id; st.hist = 0; } // first hand of the new shoe
       else st.used = true; // cards from the old shoe
     }
     S.history = []; S.maxVisible = 0;
     computePrediction();
     toast('New shoe detected. Counting cards from the start.');
-    seq.forEach(r => addResult(r, false));
+    // Not scored (the result was already on screen when the shoe was spotted), but when it is the only
+    // one there, the cards being dealt are its own.
+    seq.forEach(r => addResult(r, false, seq.length === 1));
     if (seq.length > 2) S.shoe.fromStart = false;
     renderAll();
   }
@@ -483,7 +494,9 @@
   // ------------------------------------------------------------------ results, logging, learning
   // live = this hand appeared on its own, after its prediction was shown. Hands re-added by a correction,
   // the roadmap box, Fix results or several at once are "replayed": logged, but never learned from or scored.
-  function addResult(r, live = true) {
+  // pairable = the cards on the table can be this hand's. It follows live, except at the start of a shoe,
+  // where the first result is not scored but its cards are the ones being dealt.
+  function addResult(r, live = true, pairable = live) {
     const p = S.pending;
     const e = { t: Date.now(), epoch: S.cards.epoch, site: S.host, shoe: S.shoe.id, hand: S.history.length + 1, result: r, cards: null,
       pred: live && !S.joining && p ? { side: p.side, q: +p.q.toFixed(8), mathQ: +p.mathQ.toFixed(8),
@@ -499,9 +512,12 @@
     }
     S.log.push(e);
     S.history.push(r);
+    // When the roadmap catches up with several hands at once, the cards on the table belong to the
+    // newest of them, not to the one being logged here, so no hand in that batch may claim them.
+    S.cards.openEntry = pairable ? e : null;
     const st = S.cards.stable;
     // Cards belong to a result only if they were on the table during the same deal.
-    if (cardsBelong(st, e)) {
+    if (pairable && cardsBelong(st, e)) {
       const fit = resolveFor(st, r);
       if (fit) attachCards(e, fit, st);
     }
@@ -521,10 +537,11 @@
       S.shoe.cardsSeen++;
     }
     S.shoe.handsWithCards++;
-    S.cards.attachedKey = st.key;
+    S.cards.attachedKey = cardStamp(st);
     st.used = true;
     if (original) original.used = true;
     if (!st.corrected) learnTemplates(st);
+    setStep('Cards', 'ok', `Recorded hand ${entry.hand}: Player ${st.pRanks.join(' ')} · Banker ${st.bRanks.join(' ')}.` + cardsProgress());
     computePrediction();
     renderAll();
     scheduleSave();
@@ -542,10 +559,14 @@
     }
   }
 
-  // Cards fit a logged hand only if they were seen in the same shoe, during the same deal,
-  // and just before (or just after) that hand's result appeared on the roadmap.
-  const cardsBelong = (st, e) => st && e && !st.used && st.shoe === e.shoe && st.epoch === e.epoch &&
-    (e.hand - st.hist === 1 || e.hand - st.hist === 0) && S.cards.attachedKey !== st.key;
+  // Cards fit a logged hand only if they were seen in the same shoe, just before (or just after) that
+  // hand's result appeared on the roadmap. Fast tables clear the cards and deal again before the
+  // roadmap catches up, so the result may arrive one deal late; the hand number is what pins the cards
+  // to their result, and the reading still has to produce that result before it is used.
+  const cardStamp = st => `${st.shoe}:${st.epoch}:${st.hist}:${st.key}`;
+  const cardsBelong = (st, e) => st && e && !st.used && st.shoe === e.shoe &&
+    (e.epoch - st.epoch === 0 || e.epoch - st.epoch === 1) &&
+    (e.hand - st.hist === 1 || e.hand - st.hist === 0) && S.cards.attachedKey !== cardStamp(st);
 
   // ------------------------------------------------------------------ prediction
   function computePrediction() {
@@ -585,12 +606,18 @@
     return { x: z.x * kx, y: z.y * ky, width: z.width * kx, height: z.height * ky };
   }
 
+  function cardsProgress() {
+    const sh = S.shoe;
+    return sh ? ` Cards recorded this shoe: ${sh.cardsSeen} cards across ${sh.handsWithCards} hands.` : '';
+  }
+
   // Read all cards. If the best reading breaks the drawing rules, try each card's next-closest ranks
   // and keep the closest legal hand for every possible winner (the roadmap then picks the right one).
   function readHand(img, found) {
     const tpl = templates();
     const left = found.left.map(b => V.readCard(img, b, tpl)), right = found.right.map(b => V.readCard(img, b, tpl));
-    if (left.concat(right).some(c => !c)) return null;
+    S.cards.readFailures = left.concat(right).map((c, i) => c ? null : { i, box: found.left.concat(found.right)[i] }).filter(Boolean);
+    if (S.cards.readFailures.length) return null;
     const swap = site().cards && site().cards.swap;
     const P = swap ? right : left, Bk = swap ? left : right;
     const cards = P.concat(Bk), nP = P.length;
@@ -613,9 +640,12 @@
     const pRanks = best ? best[1].pRanks : P.map(c => c.rank), bRanks = best ? best[1].bRanks : Bk.map(c => c.rank);
     const result = best ? best[0] : null;
     const key = 'P:' + P.map(c => c.rank).sort().join(',') + '|B:' + Bk.map(c => c.rank).sort().join(',') + '#' + cards.length;
-    // Confident = every card is a close match and no correction was needed.
-    const confident = !!best && best[1].cost === 0 && cards.every(c => c.dist <= 0.05);
-    return { pRanks, bRanks, result, valid: !!result, confident, key, reads: cards, byResult, corrected: best ? best[1].cost > 0 : false, found };
+    const readable = cards.every(c => c.dist <= 0.2 && c.margin >= 0.02);
+    // Confident = every card is a clear match that stood on its own, and the hand needed no correction
+    // to obey the drawing rules. Such a hand is taken from a single scan, which is all a fast table
+    // gives before the cards are swept; anything less has to be read the same way twice.
+    const confident = !!best && best[1].cost === 0 && cards.every(c => c.dist <= 0.12 && c.margin >= 0.05);
+    return { pRanks, bRanks, result, valid: !!result, readable, confident, key, reads: cards, byResult, corrected: best ? best[1].cost > 0 : false, found };
   }
 
   // Pick the legal reading that agrees with the roadmap winner.
@@ -629,38 +659,65 @@
     const zone = zonePx();
     const found = V.findCards(img, zone);
     S.cards.box = zone || (found ? found.bounds : null);
-    if (!found) { S.cards.present = false; S.cards.lastKey = null; S.cards.streak = 0; S.cards.attachedKey = null; S.cards.calibStreak = 0; drawFrames(); return; }
+    if (!found) {
+      S.cards.present = false; S.cards.lastKey = null; S.cards.streak = 0; S.cards.attachedKey = null; S.cards.calibStreak = 0;
+      if (!S.cards.calibOpen && !adj && Date.now() >= S.cards.snoozeUntil) {
+        setStep('Cards', 'busy', (zone ? 'No card faces detected in the green box. Adjust it to cover all dealt card faces.'
+          : 'No card faces detected; searching across the game view.') + cardsProgress());
+      }
+      drawFrames();
+      return;
+    }
     // Cards appearing after an empty table start a new deal.
-    if (!S.cards.present) { S.cards.present = true; S.cards.epoch++; }
+    if (!S.cards.present) { S.cards.present = true; S.cards.epoch++; S.cards.epochAt = Date.now(); }
 
     if (!cardsReady()) {
       if (S.cards.calibOpen || adj || Date.now() < S.cards.snoozeUntil) return; // never on top of adjust mode
       // Ask as soon as the cards form a complete legal hand (or after two frames with cards, so the user can fix misreads).
       const h = readHand(img, found);
       if (++S.cards.calibStreak >= 2 || (h && h.valid)) openCalibration(img, found);
+      else setStep('Cards', 'busy', 'Cards spotted. Waiting for the deal to finish…');
       return;
     }
     const hand = readHand(img, found);
-    S.debug.push({ t: Date.now(), epoch: S.cards.epoch, hist: S.history.length, n: found.left.length + found.right.length, hand: hand && { p: hand.reads.slice(0, found.left.length).map(c => c.rank + ':' + c.dist.toFixed(3)), b: hand.reads.slice(found.left.length).map(c => c.rank + ':' + c.dist.toFixed(3)), valid: hand.valid, res: hand.result } });
+    S.debug.push({ t: Date.now(), epoch: S.cards.epoch, hist: S.history.length, n: found.left.length + found.right.length, hand: hand && {
+      p: hand.reads.slice(0, found.left.length).map(c => c.rank + ':' + c.dist.toFixed(3) + ':' + c.margin.toFixed(3)),
+      b: hand.reads.slice(found.left.length).map(c => c.rank + ':' + c.dist.toFixed(3) + ':' + c.margin.toFixed(3)),
+      valid: hand.valid, readable: hand.readable, res: hand.result,
+    }, failed: hand ? [] : (S.cards.readFailures || []) });
     if (S.debug.length > 300) S.debug.shift();
-    if (!hand) return;
+    if (!hand) {
+      setStep('Cards', 'busy', 'Card faces found, but one or more ranks are unclear. This hand is not counted.' + cardsProgress());
+      return;
+    }
+    if (!hand.readable) {
+      S.cards.last = hand;
+      setStep('Cards', 'busy', 'Unclear card rank; this hand is not counted. Adjust the green box or redo card setup.' + cardsProgress());
+      return;
+    }
     if (hand.key === S.cards.lastKey) S.cards.streak++; else { S.cards.lastKey = hand.key; S.cards.streak = 1; }
     S.cards.last = hand;
     // A hand that passes the drawing rules is complete (no more cards can come). One confident read is enough;
     // a less certain read must be seen the same way twice.
-    if (hand.valid && (hand.confident || S.cards.streak >= 2)) {
-      if (!S.cards.stable || S.cards.stable.key !== hand.key || S.cards.stable.epoch !== S.cards.epoch)
-        S.cards.stable = { ...hand, seenAt: Date.now(), used: false, epoch: S.cards.epoch, shoe: S.shoe && S.shoe.id, hist: S.history.length };
+    if (hand.valid && (hand.confident || S.cards.streak >= 2) && S.cards.epoch !== S.cards.staleEpoch) {
+      if (!S.cards.stable || S.cards.stable.key !== hand.key || S.cards.stable.epoch !== S.cards.epoch ||
+          S.cards.stable.shoe !== S.shoe.id || S.cards.stable.hist !== S.history.length || S.cards.stable.used)
+        S.cards.stable = { ...hand, seenAt: Date.now(), used: false, epoch: S.cards.epoch, epochAt: S.cards.epochAt, shoe: S.shoe && S.shoe.id, hist: S.history.length };
+      const e = S.cards.openEntry;
+      const canAttach = e && !e.cards && e.shoe === S.shoe.id && e.hand === S.history.length && cardsBelong(S.cards.stable, e);
+      if (!canAttach && cardStamp(S.cards.stable) !== S.cards.attachedKey)
+        setStep('Cards', 'busy', `Read Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; waiting for the matching roadmap result.` + cardsProgress());
       tryAttachLatest();
+    } else {
+      setStep('Cards', 'busy', `Cards visible: Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; waiting for the deal to finish.` + cardsProgress());
     }
-    renderCardStatus();
   }
 
   // The roadmap may update before the cards are confirmed: attach to the latest hand if it matches.
   function tryAttachLatest() {
     const st = S.cards.stable;
     if (!st || st.used || S.cards.attachedKey === st.key) return;
-    const e = S.log[S.log.length - 1];
+    const e = S.cards.openEntry;
     if (e && !e.cards && S.shoe && e.shoe === S.shoe.id && e.hand === S.history.length && cardsBelong(st, e)) {
       const fit = resolveFor(st, e.result);
       if (fit) attachCards(e, fit, st);
@@ -723,11 +780,15 @@
   $('calibOk').onclick = () => {
     const h = calibHand();
     const tpls = [];
-    calib.reads.forEach((r, i) => { if (r && r.feat) tpls.push({ f: r.feat.f, aspect: r.feat.aspect, parts: r.feat.parts, rank: calib.ranks[i] }); });
+    calib.reads.forEach((r, i) => {
+      if (r && r.feat && r.feat.f && r.feat.f.every(Number.isFinite) &&
+          Number.isFinite(r.feat.aspect) && r.feat.aspect > 0.2 && r.feat.aspect < 3)
+        tpls.push({ f: r.feat.f, aspect: r.feat.aspect, parts: r.feat.parts, rank: calib.ranks[i] });
+    });
     const pad = calib.found.cardShort * 1.6, b = calib.found.bounds;
     const previousZone = site().cards && site().cards.zone;
     site().cards = {
-      ready: true, swap: calib.swap, templates: tpls,
+      ready: true, templateVersion: CARD_TEMPLATE_VERSION, swap: calib.swap, templates: tpls,
       zone: previousZone || { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad, imgW: S.frame.width, imgH: S.frame.height },
       setupAt: Date.now(),
     };
@@ -736,10 +797,10 @@
     const reads = calib.reads.map((r, i) => ({ ...(r || {}), rank: calib.ranks[i], dist: 0 }));
     const P = calib.swap ? reads.slice(n) : reads.slice(0, n), Bk = calib.swap ? reads.slice(0, n) : reads.slice(n);
     S.cards.stable = { pRanks: h.P, bRanks: h.Bk, result: h.result, valid: true, reads: P.concat(Bk),
-      key: 'P:' + h.P.slice().sort().join(',') + '|B:' + h.Bk.slice().sort().join(','), seenAt: calib.t, used: false, epoch: calib.epoch, shoe: calib.shoe, hist: calib.hist };
+      key: 'P:' + h.P.slice().sort().join(',') + '|B:' + h.Bk.slice().sort().join(','), seenAt: calib.t, used: false, epoch: calib.epoch, epochAt: S.cards.epochAt, shoe: calib.shoe, hist: calib.hist };
     closeCalib();
     tryAttachLatest();
-    renderSteps();
+    if (!S.cards.stable.used) setStep('Cards', 'busy', 'Card setup saved. Waiting for the next hand to be read and matched.' + cardsProgress());
     scheduleSave();
     toast('Cards learned. The app is now fully automatic.');
   };
@@ -955,19 +1016,12 @@
   const stepState = { Link: ['', 'Waiting for the link'], Road: ['', 'Not found yet'], Cards: ['', 'Waiting for a hand to finish'] };
   function setStep(name, cls, text) { stepState[name] = [cls, text]; renderSteps(); }
   function renderSteps() {
-    if (cardsReady() && stepState.Cards[0] !== 'ok') stepState.Cards = ['ok', 'Learned for this site. Tracking every card.'];
     for (const k of Object.keys(stepState)) {
       const el = $('step' + k);
       el.className = 'step ' + stepState[k][0];
       el.querySelector('span').textContent = stepState[k][1];
     }
   }
-  function renderCardStatus() {
-    if (!cardsReady()) return;
-    const h = S.cards.last;
-    if (h) setStep('Cards', 'ok', `Reading: Player ${h.pRanks.join(' ')} · Banker ${h.bRanks.join(' ')}${h.valid ? '' : ' (dealing…)'}`);
-  }
-
   function renderPrediction() {
     const p = S.pending, el = $('prediction'), badge = $('predBadge');
     if (!S.joined || !p) {
@@ -1306,7 +1360,7 @@
     if (document.activeElement !== $('fixText')) $('fixText').value = S.history.join('');
   }
 
-  function renderAll() { renderRoadInfo(); renderSteps(); renderPrediction(); renderRoadRead(); renderVersus(); renderShoe(); renderLearning(); renderLog(); renderCardStatus(); }
+  function renderAll() { renderRoadInfo(); renderSteps(); renderPrediction(); renderRoadRead(); renderVersus(); renderShoe(); renderLearning(); renderLog(); }
   window.addEventListener('resize', () => { S.sig = null; renderShoe(); });
 
   // ------------------------------------------------------------------ settings

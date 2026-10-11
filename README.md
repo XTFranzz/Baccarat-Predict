@@ -42,7 +42,7 @@ npm start
 
 - **Roadmap.** The app looks for a grid of same-size red and blue marks and prefers the Bead Plate. It reads new results as they appear, follows the roadmap when it scrolls, and treats an emptied roadmap as a shuffle.
 - **New shoe.** After a shuffle the card count restarts. If you join mid-shoe, the count uses only the cards seen since you joined, which is still correct, and becomes complete from the next shuffle.
-- **Cards.** The app finds the white card faces and reads the rank in each corner. Use **Adjust card box** to move or resize the green detection region over both hands; the saved box is specific to the current site. Every hand is checked against the official drawing rules. If a reading breaks the rules, the app tries the next-closest ranks to find the legal hand that matches the roadmap winner.
+- **Cards.** The app detects pale card faces, including up to six cards with a sideways third card on either side, and searches both duplicated rank corners, the way up taken from the card's own shape, so an upside-down rank can still be read when its twin is covered. The rank is cut out as a shape, so it reads the same whether the suit is printed under it (small printed faces) or beside it (the big faces live streams use), and the table felt, a winner badge or a logo banner lying over the card is left out. Confirmed ranks from the one-time setup are saved as site-specific visual examples, including when you correct an automatic guess. After a card-reader update, redo setup once so older saved templates are replaced by confirmed samples. Suits are never read or stored because they do not affect Baccarat card values or shoe odds. Use **Adjust card box** to move or resize the green detection region over both hands; the saved box is specific to the current site. Every hand is checked against the official drawing rules. If a reading breaks the rules, the app tries the next-closest ranks to find the legal hand that matches the roadmap winner.
 - **Odds.** The app enumerates the legal next-hand draws without replacement from the tracked card-value counts and calculates Banker, Player, and Tie probabilities exactly. Before any cards are tracked it uses standard 8-deck odds. After joining mid-shoe, cards dealt before joining are unknown, so the calculation is exact for the tracked counts but the shoe composition is partial until the next shuffle.
 - **Learning.** A logistic model updates after each eligible live non-tie result using card odds, the last winner, streak, ping-pong, recent side frequency, Big Road columns, and derived roads. It is experimental: roadmap patterns may have no predictive signal, and results do not promise improved accuracy or profit.
 
@@ -59,7 +59,7 @@ Open **Settings and tools** at the bottom of the panel to change the strong-lean
 | Command | What it checks |
 | --- | --- |
 | `npm test` | Shoe dealing and odds against the known 8-deck values |
-| `npm run bench` | Card reading across fonts, sizes, and sideways cards |
+| `npm run bench` | Card reading across fonts, sizes and sideways cards, plus live-stream faces and a real captured frame |
 | `npm run selftest` | End to end on a fake live table: joining mid-shoe, card setup, shuffle, card tracking, logging |
 | `BP_SELFTEST_MODE=window npm run selftest` | The same, with the table in a separate window read through Watch my browser |
 

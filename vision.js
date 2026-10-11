@@ -374,7 +374,7 @@
   }
 
   // ---------------- Cards ----------------
-  const isWhite = (r, g, b) => Math.min(r, g, b) >= 200 && Math.max(r, g, b) - Math.min(r, g, b) <= 40;
+  const isCardSurface = (r, g, b) => Math.min(r, g, b) >= 160 && Math.max(r, g, b) - Math.min(r, g, b) <= 90;
 
   // Finds 4-6 white card faces near each other and splits them into a left and a right group.
   function findCards(img, zone) {
@@ -386,11 +386,44 @@
     const d = img.data;
     for (let y = 0; y < h; y++) {
       let p = ((y0 + y) * img.width + x0) * 4, i = y * w;
-      for (let x = 0; x < w; x++, p += 4, i++) if (isWhite(d[p], d[p + 1], d[p + 2])) labels[i] = 1;
+      for (let x = 0; x < w; x++, p += 4, i++) if (isCardSurface(d[p], d[p + 1], d[p + 2])) labels[i] = 1;
     }
-    const cands = components(labels, w, h).filter(b => {
+    const { blobs, ids } = components(labels, w, h, true);
+    const referenceCards = blobs.filter(b => {
+      const short = Math.min(b.w, b.h), ratio = Math.max(b.w, b.h) / short;
+      return short >= 22 && ratio <= 1.65 && b.area / (b.w * b.h) >= 0.5;
+    });
+    const referenceArea = median(referenceCards.map(b => b.area));
+    const referenceShort = median(referenceCards.map(b => Math.min(b.w, b.h)));
+    function sliceBlob(id, x0, x1, y0, y1) {
+      let minX = w, minY = h, maxX = -1, maxY = -1, area = 0, sx = 0, sy = 0;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const i = y * w + x;
+        if (ids[i] !== id) continue;
+        area++; sx += x; sy += y;
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+      return area ? { id, area, cx: sx / area, cy: sy / area, minX, minY, maxX, maxY,
+        w: maxX - minX + 1, h: maxY - minY + 1 } : null;
+    }
+    function splitMerged(blob, depth = 0) {
+      const horizontal = blob.w >= blob.h, length = horizontal ? blob.w : blob.h;
+      if (depth >= 2 || length < 50 || !referenceArea || blob.area < referenceArea * 1.1 ||
+        length < referenceShort * 1.45 ||
+        Math.max(blob.w, blob.h) / Math.min(blob.w, blob.h) <= 1.4) return [blob];
+      const cut = Math.round(length / 2) - 1;
+      const parts = horizontal
+        ? [sliceBlob(blob.id, blob.minX, blob.minX + cut, blob.minY, blob.maxY),
+          sliceBlob(blob.id, blob.minX + cut + 1, blob.maxX, blob.minY, blob.maxY)]
+        : [sliceBlob(blob.id, blob.minX, blob.maxX, blob.minY, blob.minY + cut),
+          sliceBlob(blob.id, blob.minX, blob.maxX, blob.minY + cut + 1, blob.maxY)];
+      if (parts.some(part => !part || Math.min(part.w, part.h) < 22)) return [blob];
+      return parts.flatMap(part => splitMerged(part, depth + 1));
+    }
+    const cands = blobs.flatMap(b => splitMerged(b)).filter(b => {
       const short = Math.min(b.w, b.h), long = Math.max(b.w, b.h);
-      return short >= 14 && long / short >= 1.2 && long / short <= 1.85 && b.area / (b.w * b.h) >= 0.5;
+      return short >= 22 && long / short <= 2.0 && b.area / (b.w * b.h) >= 0.35;
     });
     for (const b of cands) { b.box = b.w * b.h; b.long = Math.max(b.w, b.h); }
     const parent = cands.map((_, i) => i);
@@ -426,12 +459,12 @@
     const W = img.width, d = img.data;
     const bx = Math.round(box.x), by = Math.round(box.y), bw = Math.round(box.width), bh = Math.round(box.height);
     if (rot === 0) return { w: bw, h: bh, at: (x, y) => ((by + y) * W + bx + x) * 4, d };
+    if (rot === 3) return { w: bw, h: bh, at: (x, y) => ((by + bh - 1 - y) * W + bx + bw - 1 - x) * 4, d };
     if (rot === 1) return { w: bh, h: bw, at: (x, y) => ((by + bh - 1 - x) * W + bx + y) * 4, d };
     return { w: bh, h: bw, at: (x, y) => ((by + x) * W + bx + bw - 1 - y) * 4, d };
   }
 
   const GW = 10, GH = 14;
-  const isInk = (r, g, b) => (0.299 * r + 0.587 * g + 0.114 * b) < 150 || (r > 130 && r - g > 60 && r - b > 40);
 
   // Ink strength of a pixel (0..1): dark text, or red text on a white card.
   function inkLevel(r, g, b) {
@@ -441,40 +474,92 @@
   }
 
   // Rank symbol feature from a region given by an accessor. Region = card corner, or a whole canvas for seeds.
-  // The rank is the first band of ink from the top, ending at the blank gap above the suit symbol.
+  // Cards differ in where the suit sits: under the rank on printed-style faces, beside it on the big
+  // live-stream faces. So the rank is taken as a shape, not as a band: the ink group nearest the corner,
+  // plus a second piece only when the first is narrow enough to be the "1" of a 10.
   function glyphFeature(acc, rx, ry, rw, rh) {
+    rx = Math.round(rx); ry = Math.round(ry);
     rw = Math.max(1, Math.round(rw)); rh = Math.max(1, Math.round(rh));
-    const ink = new Float32Array(rw * rh), labels = new Uint8Array(rw * rh);
+    const ink = new Float32Array(rw * rh), labels = new Uint8Array(rw * rh), face = new Uint8Array(rw * rh);
     for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
-      const p = acc.at(rx + x, ry + y), v = inkLevel(acc.d[p], acc.d[p + 1], acc.d[p + 2]);
-      ink[y * rw + x] = v;
-      if (v >= 0.35) labels[y * rw + x] = 1;
+      const p = acc.at(rx + x, ry + y), r = acc.d[p], g = acc.d[p + 1], b = acc.d[p + 2], i = y * rw + x;
+      ink[i] = inkLevel(r, g, b);
+      if (ink[i] >= 0.35) labels[i] = 1;
+      if (isCardSurface(r, g, b)) face[i] = 1;
     }
-    // Remove ink touching the outer edge (rounded card corner, borders) and specks.
+    // A rank is printed on the card, so card surface lies between it and the outside on every side.
+    // The table felt in a tilted card's box, a winner banner or a logo over the card all fail that.
+    const onCard = b => {
+      const my = Math.round((b.minY + b.maxY) / 2), mx = Math.round((b.minX + b.maxX) / 2);
+      let sides = 0;
+      for (let x = b.minX - 1; x >= 0; x--) if (face[my * rw + x]) { sides++; break; }
+      for (let x = b.maxX + 1; x < rw; x++) if (face[my * rw + x]) { sides++; break; }
+      for (let y = b.minY - 1; y >= 0; y--) if (face[y * rw + mx]) { sides++; break; }
+      for (let y = b.maxY + 1; y < rh; y++) if (face[y * rw + mx]) { sides++; break; }
+      return sides >= 3;
+    };
     const { blobs, ids } = components(labels, rw, rh, true);
-    const bad = new Set(blobs.filter(b => b.minX === 0 || b.minY === 0 || b.area < 2).map(b => b.id));
-    const rowInk = new Float32Array(rh);
-    for (let i = 0; i < rw * rh; i++) {
-      if (labels[i] && bad.has(ids[i])) { labels[i] = 0; ink[i] = 0; }
-      if (labels[i]) rowInk[(i / rw) | 0]++;
+    const parts = blobs.filter(b => b.area >= 3 && onCard(b));
+    if (!parts.length) return null;
+    // The rank is the ink in the corner itself. Ink that starts lower or further in is something else
+    // on the card: the security barcode, the centre pips, or the suit beside the rank.
+    const near = parts.filter(b => b.minY <= rh * 0.5 && b.minX <= rw * 0.65);
+    const tallest = Math.max(0, ...near.map(b => b.h));
+    const seedable = near.filter(b => b.h >= tallest * 0.45);
+    if (!seedable.length) return null;
+    let seed = seedable[0];
+    for (const b of seedable) if (b.minX + b.minY < seed.minX + seed.minY) seed = b;
+
+    // Collect the rest of the rank. Thin strokes break a drawn glyph into pieces a pixel or two apart,
+    // and "10" is two digits side by side. Everything else on the card — the suit, the barcode, the
+    // centre pips — is separated by a designed gap, far wider than either.
+    // A broken stroke leaves a gap of a pixel or two whatever the size; anything wider is a separate mark.
+    const brk = Math.max(2, Math.min(3, tallest * 0.12));
+    parts.sort((a, b) => a.minX - b.minX);   // a second digit is reached for before anything beyond it
+    const group = new Set([seed]);
+    let x0 = seed.minX, x1 = seed.maxX, y0 = seed.minY, y1 = seed.maxY;
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const b of parts) {
+        if (group.has(b)) continue;
+        const h = y1 - y0 + 1, w = x1 - x0 + 1;
+        const gapX = Math.max(x0 - b.maxX, b.minX - x1), gapY = Math.max(y0 - b.maxY, b.minY - y1);
+        const overX = Math.min(x1, b.maxX) - Math.max(x0, b.minX) + 1;
+        const overY = Math.min(y1, b.maxY) - Math.max(y0, b.minY) + 1;
+        // A stroke that thins out splits a glyph into stacked pieces, or into pieces that all but touch
+        // side by side. Sideways the tolerance is tighter, because that is where the suit waits.
+        const broken = (overX >= Math.min(w, b.w) * 0.4 && gapY <= brk) ||
+          (overY >= Math.min(h, b.h) * 0.4 && gapX <= brk * 0.5) ||
+          (b.h <= h * 0.55 && gapX <= 1 && gapY <= 1);   // a shed tip, still all but touching
+        // A second digit stands a little further off, so only a shape narrow enough to be the "1"
+        // of a 10 reaches for one — which is what keeps a suit beside the rank out of the reading.
+        const digit = w <= h * 0.6 && b.minX > x1 && b.minX - x1 <= Math.max(2, h * 0.22) &&
+          b.w <= h * 1.1 && b.h >= h * 0.6 &&
+          Math.abs(b.minY - y0) <= h * 0.3 && Math.abs(b.maxY - y1) <= h * 0.3;
+        if (!broken && !digit) continue;
+        group.add(b); grew = true;
+        x0 = Math.min(x0, b.minX); x1 = Math.max(x1, b.maxX);
+        y0 = Math.min(y0, b.minY); y1 = Math.max(y1, b.maxY);
+      }
     }
-    let y0 = 0; while (y0 < rh && !rowInk[y0]) y0++;
-    if (y0 >= rh) return null;
-    let y1 = y0; while (y1 + 1 < rh && rowInk[y1 + 1]) y1++;
-    if (y1 - y0 + 1 < Math.max(4, rh * 0.12)) return null;
-    let x0 = rw, x1 = -1;
-    const partIds = new Set();
-    for (let y = y0; y <= y1; y++) for (let x = 0; x < rw; x++) if (labels[y * rw + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; partIds.add(ids[y * rw + x]); }
-    // count separate pieces side by side (e.g. "1" and "0")
-    const pieces = [...partIds].map(id => blobs[id]).filter(b => b.h >= (y1 - y0 + 1) * 0.6).length;
     const gw = x1 - x0 + 1, gh = y1 - y0 + 1;
+    if (gh < 4 || gw < 2) return null;
+    // "10" is the only rank written as two digits: count the pieces that stand alone side by side.
+    const standing = [...group].filter(b => b.h >= gh * 0.6).sort((a, b) => a.minX - b.minX);
+    let wide = 0, reach = -Infinity;
+    for (const b of standing) { if (b.minX > reach) wide++; reach = Math.max(reach, b.maxX); }
+    const mine = new Set([...group].map(b => b.id));
     const f = new Float32Array(GW * GH), n = new Float32Array(GW * GH);
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const i = y * rw + x;
+      // A neighbour poking into the box (the suit beside the rank) is left out; faint edge pixels stay,
+      // because anti-aliasing is what keeps small ranks apart.
+      const v = labels[i] && !mine.has(ids[i]) ? 0 : ink[i];
       const cx = Math.min(GW - 1, Math.floor((x - x0) / gw * GW)), cy = Math.min(GH - 1, Math.floor((y - y0) / gh * GH));
-      n[cy * GW + cx]++; f[cy * GW + cx] += ink[y * rw + x];
+      n[cy * GW + cx]++; f[cy * GW + cx] += v;
     }
     for (let i = 0; i < f.length; i++) f[i] = n[i] ? f[i] / n[i] : 0;
-    return { f: Array.from(f), aspect: gw / gh, parts: Math.max(1, Math.min(2, pieces)) };
+    return { f: Array.from(f), aspect: gw / gh, parts: Math.max(1, Math.min(2, wide)) };
   }
 
   function glyphDistance(a, b) {
@@ -497,25 +582,33 @@
       alts: sorted.slice(0, 4).map(([rank, dist]) => ({ rank, dist })) };
   }
 
-  // Read one card: tries the upright orientation (or both turns for a sideways card).
-  // A site's own learned templates only win on a near-exact match (same graphic drawn again);
-  // otherwise the generic font templates decide, so a few learned ranks cannot pull other ranks toward them.
+  // Read both duplicated rank corners. Reading the two corners of one upright turn already covers the
+  // card either way up, so only a card whose box is too square to call is also read turned by 90°:
+  // matching a suit symbol on its side against rank templates is how a heart becomes an "A".
   const EXACT = 0.03;
+  const LEARNED_MAX = 0.12;
   function readCard(img, box, templates) {
     const learned = templates.filter(t => !t.seed), seeds = templates.filter(t => t.seed);
-    const rots = box.width > box.height ? [1, 2] : [0];
+    const square = Math.abs(box.width - box.height) <= Math.max(box.width, box.height) * 0.15;
+    const turns = square ? [0, 1] : box.width > box.height ? [1] : [0];
     let best = null;
-    for (const rot of rots) {
+    for (const rot of turns) {
       const acc = uprightAccessor(img, box, rot);
-      const feat = glyphFeature(acc, 1, 1, acc.w * 0.5, acc.h * 0.3);
-      if (!feat) continue;
-      let m = matchGlyph(feat, seeds.length ? seeds : templates);
-      const ml = learned.length ? matchGlyph(feat, learned) : null;
-      if (ml && ml.dist <= EXACT) {
-        const alts = [{ rank: ml.rank, dist: ml.dist }].concat((m ? m.alts : []).filter(a => a.rank !== ml.rank).map(a => ({ rank: a.rank, dist: Math.max(a.dist, ml.dist + 0.001) })));
-        m = { rank: ml.rank, dist: ml.dist, margin: alts.length > 1 ? alts[1].dist - ml.dist : 1, alts, exact: true };
+      const corners = [
+        { acc, corner: 'top-left' },
+        { acc: { w: acc.w, h: acc.h, d: acc.d, at: (x, y) => acc.at(acc.w - 1 - x, acc.h - 1 - y) }, corner: 'bottom-right' },
+      ];
+      for (const { acc: cornerAcc, corner } of corners) {
+        const feat = glyphFeature(cornerAcc, 1, 1, cornerAcc.w * 0.6, cornerAcc.h * 0.48);
+        if (!feat) continue;
+        let m = matchGlyph(feat, seeds.length ? seeds : templates);
+        const ml = learned.length ? matchGlyph(feat, learned) : null;
+        if (ml && (ml.dist <= EXACT || (ml.dist <= LEARNED_MAX && (!m || ml.dist + 0.01 < m.dist)))) {
+          const alts = [{ rank: ml.rank, dist: ml.dist }].concat((m ? m.alts : []).filter(a => a.rank !== ml.rank));
+          m = { rank: ml.rank, dist: ml.dist, margin: alts.length > 1 ? alts[1].dist - ml.dist : 1, alts, exact: ml.dist <= EXACT };
+        }
+        if (m && (!best || m.dist < best.dist)) best = { ...m, feat, corner, rotation: rot };
       }
-      if (m && (!best || m.dist < best.dist)) best = { ...m, feat };
     }
     return best;
   }

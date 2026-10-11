@@ -1,0 +1,107 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body>
+<canvas id="c"></canvas>
+<script src="../vision.js"></script>
+<script>
+// Card reading on live-stream style faces: a big rank with the suit BESIDE it, a barcode down the
+// middle, cards tilted on the felt and partly under the table's own banners.
+//  - real: a frame captured from Pragmatic Play Speed Baccarat (test/pragmatic-cards.png)
+//  - drawn: the same layout rendered at several sizes, tilts and overlays, for every rank
+const V = RoadVision;
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const c = document.getElementById('c'), ctx = c.getContext('2d', { willReadFrequently: true });
+
+function frame(w, h) { c.width = w; c.height = h; return ctx; }
+
+// One live-style card: rank top-left, suit top-right, both repeated upside down at the bottom.
+function drawLiveCard(g, x, y, w, h, rank, suit, tilt) {
+  g.save();
+  g.translate(x + w / 2, y + h / 2); g.rotate(tilt); g.translate(-w / 2, -h / 2);
+  g.fillStyle = '#f3efe9'; g.beginPath(); g.roundRect(0, 0, w, h, w * 0.06); g.fill();
+  const red = suit === '♥' || suit === '♦';
+  const index = (flip) => {
+    g.save();
+    if (flip) { g.translate(w, h); g.rotate(Math.PI); }
+    g.fillStyle = red ? '#d2302c' : '#141414';
+    g.font = `bold ${Math.round(h * 0.34)}px Arial`; g.textBaseline = 'top';
+    g.fillText(rank, w * 0.06, h * 0.04);
+    g.font = `${Math.round(h * 0.30)}px Arial`;
+    g.fillText(suit, w * 0.56, h * 0.05);
+    g.restore();
+  };
+  index(false); index(true);
+  g.fillStyle = '#8d8d8d';                       // security barcode across the middle
+  for (let i = 0; i < 7; i++) g.fillRect(w * 0.42, h * 0.44 + i * h * 0.022, w * 0.17, h * 0.012);
+  g.restore();
+}
+
+// The table's own overlays: a translucent logo banner over the top of the cards, a solid winner badge.
+function overlays(g, w, h, kind) {
+  if (kind === 'none') return;
+  if (kind === 'banner' || kind === 'both') {
+    g.fillStyle = 'rgba(255,255,255,0.45)';
+    g.beginPath(); g.roundRect(w * 0.18, -h * 0.2, w * 0.6, h * 0.42, h * 0.2); g.fill();
+  }
+  if (kind === 'badge' || kind === 'both') {
+    g.fillStyle = 'rgba(190,30,30,0.92)';
+    g.beginPath(); g.roundRect(w * 0.3, h * 0.02, w * 0.3, h * 0.2, 6); g.fill();
+  }
+}
+
+// Player's two cards, a wide gap, then the Banker's two — the layout findCards splits on.
+function drawnScene(ranks, size, tilt, overlay) {
+  const w = Math.round(44 * size), h = Math.round(62 * size), gap = Math.round(8 * size);
+  const mid = w * 1.4;
+  const W = Math.round(ranks.length * (w + gap) + mid + gap * 4), H = h + gap * 6;
+  const g = frame(W, H);
+  g.fillStyle = '#8d2010'; g.fillRect(0, 0, W, H);   // table felt
+  ranks.forEach((r, i) => drawLiveCard(g, Math.round(gap * 2 + i * (w + gap) + (i >= 2 ? mid : 0)), gap * 3, w, h, r,
+    ['♣', '♠', '♥', '♦'][i % 4], (i % 2 ? 1 : -1) * tilt));
+  overlays(g, W, H, overlay);
+  return ctx.getImageData(0, 0, W, H);
+}
+
+function readScene(img, templates) {
+  const found = V.findCards(img, { x: 0, y: 0, width: img.width, height: img.height });
+  if (!found) return null;
+  return found.left.concat(found.right).map(b => {
+    const m = V.readCard(img, b, templates);
+    return m ? { rank: m.rank, dist: +m.dist.toFixed(3), parts: m.feat.parts, corner: m.corner,
+      alts: m.alts.map(a => a.rank + ':' + a.dist.toFixed(3)).join(' ') } : null;
+  });
+}
+
+window.runLive = async function () {
+  const seeds = V.makeSeedTemplates();
+  const out = {};
+
+  // --- real captures, with the ranks the table's own totals confirm ---
+  for (const [file, truth] of [['pragmatic-cards.png', '8,2,9,10'], ['pragmatic-six-cards.png', '10,7,4,Q,10,7']]) {
+    const png = new Image();
+    await new Promise((ok, fail) => { png.onload = ok; png.onerror = fail; png.src = file; });
+    const g = frame(png.width, png.height);
+    g.drawImage(png, 0, 0);
+    const real = readScene(ctx.getImageData(0, 0, png.width, png.height), seeds);
+    out[file] = { truth, read: real ? real.map(r => r ? r.rank : '?').join(',') : 'no cards found', detail: real };
+  }
+
+  // --- the same layout drawn, across ranks, sizes, tilts and overlays ---
+  for (const overlay of ['none', 'banner', 'badge']) {
+    let ok = 0, n = 0, failed = 0; const wrong = {};
+    for (const size of [0.8, 1, 1.4]) for (const tilt of [0, 0.07]) {
+      for (let i = 0; i < RANKS.length; i += 4) {
+        const group = [RANKS[i], RANKS[(i + 1) % 13], RANKS[(i + 2) % 13], RANKS[(i + 3) % 13]];
+        const reads = readScene(drawnScene(group, size, tilt, overlay), seeds);
+        if (!reads) { failed++; continue; }
+        reads.forEach((m, k) => {
+          n++;
+          if (m && m.rank === group[k]) ok++;
+          else { const key = group[k] + '→' + (m ? m.rank : '?'); wrong[key] = (wrong[key] || 0) + 1; }
+        });
+      }
+    }
+    out[overlay] = { acc: n ? +(ok / n * 100).toFixed(1) : 0, read: n, scenesNotFound: failed,
+      wrong: Object.entries(wrong).sort((a, b) => b[1] - a[1]).slice(0, 6).map(e => e.join(' x')).join(', ') };
+  }
+  return out;
+};
+</script></body></html>

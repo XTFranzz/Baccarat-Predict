@@ -192,6 +192,12 @@ const withCards = E.run([
   { site: 's', shoe: 1, hand: 2, result: 'P' },
 ]);
 assert.strictEqual(withCards.withCards, 1, 'hands carrying cards are counted');
+// A shoe holding a streak no deal can produce was logged by a misreading, and must not be scored.
+const impossible = E.run(Array.from({ length: 20 }, (_, i) => ({ site: 's', shoe: 1, hand: i + 1, result: 'B' }))
+  .concat(Array.from({ length: 10 }, (_, i) => ({ site: 's', shoe: 2, hand: i + 1, result: i % 2 ? 'B' : 'P' }))));
+assert.strictEqual(impossible.dropped.length, 1, 'the shoe with an impossible streak is dropped');
+assert.strictEqual(impossible.dropped[0].longestRun, 20, 'the dropped shoe reports the streak that gave it away');
+assert.strictEqual(impossible.handsScored, 10, 'only the believable shoe is scored');
 // On shoes dealt at random, neither learned model may beat the exact odds by more than its own noise.
 const noiseRng = B.mulberry32(11), noiseLog = [];
 for (let sh = 1; sh <= 25; sh++) B.dealShoe(noiseRng).forEach((res, i) => noiseLog.push({ site: 's', shoe: sh, hand: i + 1, result: res }));

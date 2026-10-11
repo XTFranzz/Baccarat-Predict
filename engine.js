@@ -27,13 +27,16 @@
   }
 
   // Resolve one hand. draw() returns the next card value (0-9). Returns 'B' | 'P' | 'T'.
-  function resolve(draw) {
-    const p1 = draw(), b1 = draw(), p2 = draw(), b2 = draw();
+  // onCard('P'|'B', value) is told every card as it is dealt, so a simulated shoe can be recorded
+  // hand by hand without a second copy of the drawing rules drifting out of step with this one.
+  function resolve(draw, onCard) {
+    const take = who => { const v = draw(); if (onCard) onCard(who, v); return v; };
+    const p1 = take('P'), b1 = take('B'), p2 = take('P'), b2 = take('B');
     let p = (p1 + p2) % 10, b = (b1 + b2) % 10;
     if (p < 8 && b < 8) {
       let p3 = -1;
-      if (p <= 5) { p3 = draw(); p = (p + p3) % 10; }
-      if (bankerDraws(b, p3)) b = (b + draw()) % 10;
+      if (p <= 5) { p3 = take('P'); p = (p + p3) % 10; }
+      if (bankerDraws(b, p3)) b = (b + take('B')) % 10;
     }
     return b > p ? 'B' : p > b ? 'P' : 'T';
   }
@@ -54,6 +57,22 @@
     let i = pos;
     const result = resolve(() => shoe[i++]);
     return { result, used: i - pos };
+  }
+
+  // Deal a whole shoe, keeping each hand's cards: the same shoe a live table would produce, written
+  // in the form the app logs. Ranks worth zero are all recorded as "10", which counts identically.
+  function dealShoeHands(rng, decks = 8, cutFromEnd = 14) {
+    const shoe = newShoe(decks, rng);
+    let pos = 0;
+    const burn = shoe[pos++] || 10; pos += burn;
+    const name = v => (v === 0 ? '10' : v === 1 ? 'A' : String(v));
+    const out = [];
+    while (pos < shoe.length - cutFromEnd - 6) {
+      const hand = { P: [], B: [] };
+      hand.result = resolve(() => shoe[pos++], (who, v) => hand[who].push(name(v)));
+      out.push(hand);
+    }
+    return out;
   }
 
   // Deal a whole shoe and return its outcome sequence.
@@ -361,7 +380,7 @@
     return { side: last, reason: `No clear pattern: follow the last winner` };
   }
 
-  root.Baccarat = { roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, payout, STRATEGIES, backtest,
+  root.Baccarat = { roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, dealShoeHands, payout, STRATEGIES, backtest,
     simulateStrategies, conditionalNext, bigRoadCols, streakLen, noTies };
   if (typeof module !== 'undefined') module.exports = root.Baccarat;
 })(typeof window !== 'undefined' ? window : globalThis);

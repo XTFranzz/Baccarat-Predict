@@ -61,6 +61,24 @@
     rich: { name: 'Roadmap-rich model (16 signals)', prior: RICH_PRIOR, features: richFeatures },
   };
 
+  // A reading fault that logs the same result over and over shows up as a streak far too long for the
+  // hands around it. Length alone does not settle it — across 1.1M dealt hands a run of 20 did turn up
+  // — so what counts is the run against the length of its own shoe: 23 in a row inside 25 hands is a
+  // one-in-two-million event, while 16 inside a full shoe is merely rare. Flagged below once in a
+  // thousand shoes, where a misreading is the overwhelmingly likelier explanation.
+  const SIDE_P = 0.5068;        // the more likely side on a decided hand
+  function runImplausible(len, n) {
+    if (len < 10 || n < 2) return false;
+    const expected = Math.max(1, n - len + 1) * Math.pow(SIDE_P, len) * (1 - SIDE_P);
+    return 1 - Math.exp(-expected) < 0.001;
+  }
+  function longestRun(hands) {
+    const n = hands.map(e => e.result).filter(r => r !== 'T');
+    let best = 0, c = 0, prev = null;
+    for (const r of n) { c = r === prev ? c + 1 : 1; prev = r; if (c > best) best = c; }
+    return best;
+  }
+
   // Group logged hands into shoes, in the order they were played.
   function shoes(log) {
     const out = [];
@@ -69,6 +87,11 @@
       if (!e || !e.result) continue;
       if (!cur || cur.shoe !== e.shoe || cur.site !== e.site) { cur = { shoe: e.shoe, site: e.site, hands: [] }; out.push(cur); }
       cur.hands.push(e);
+    }
+    for (const s of out) {
+      s.longestRun = longestRun(s.hands);
+      s.decided = s.hands.filter(e => e.result !== 'T').length;
+      s.suspect = runImplausible(s.longestRun, s.decided);
     }
     return out;
   }
@@ -82,19 +105,33 @@
       const spec = MODELS[key];
       state[key] = { spec, key, m: spec.baseline ? null : fit(spec.prior), n: 0, hits: 0, ll: 0, brier: 0, net: 0, perHandLL: [], buckets: new Map() };
     }
+    // The exact odds take about 10ms, which is the whole cost of a large run. On a very long run the
+    // card-composition drift can be refreshed every few hands instead of every hand; the pattern
+    // signals are unaffected, and how much the composition itself is worth is measured separately.
+    const everyN = Math.max(1, opts.oddsEveryN || 1);
     const oddsCache = new Map();
+    let sinceOdds = 0, lastOdds = null;
     const oddsFor = counts => {
+      if (lastOdds && sinceOdds % everyN !== 0) { sinceOdds++; return lastOdds; }
+      sinceOdds++;
       const sig2 = counts.join(',');
-      if (!oddsCache.has(sig2)) oddsCache.set(sig2, B.probsFromCounts(counts));
-      return oddsCache.get(sig2);
+      if (!oddsCache.has(sig2)) {
+        if (oddsCache.size > 50000) oddsCache.clear();
+        oddsCache.set(sig2, B.probsFromCounts(counts));
+      }
+      lastOdds = oddsCache.get(sig2);
+      return lastOdds;
     };
     let handsScored = 0, handsSkipped = 0, withCards = 0;
 
     const allShoes = shoes(log);
+    const suspect = allShoes.filter(s => s.suspect);
     for (const shoe of allShoes) {
+      if (shoe.suspect) continue;   // logged by a misreading, not played
       const counts = B.fullCounts();
       const history = [];
       let cardsSeen = 0;
+      sinceOdds = 0; lastOdds = null;
       for (const e of shoe.hands) {
         const odds = oddsFor(counts) || { B: 0.4586, P: 0.4462, T: 0.0952 };
         const mathQ = clampP(odds.B / (odds.B + odds.P));
@@ -135,7 +172,8 @@
     }
 
     const base = state.baseline;
-    const out = { handsScored, ties: handsSkipped, withCards, shoes: allShoes.length, models: [] };
+    const out = { handsScored, ties: handsSkipped, withCards, shoes: allShoes.length - suspect.length, models: [],
+      dropped: suspect.map(s => ({ shoe: s.shoe, hands: s.hands.length, decided: s.decided, longestRun: s.longestRun })) };
     for (const key of picked) {
       const s = state[key];
       if (!s.n) continue;
@@ -156,6 +194,7 @@
         row.vsBaseline = { gain: mean, se, lo: mean - 1.96 * se, hi: mean + 1.96 * se };
         row.beatsBaseline = row.vsBaseline.lo > 0;
       }
+      if (s.m) row.weights = s.m.w.slice();
       out.models.push(row);
     }
     return out;
@@ -163,13 +202,30 @@
 
   // Plain-language verdict, so a number that looks good is not mistaken for a result that is real.
   function verdict(res) {
-    if (!res.handsScored) return 'No decided hands logged yet.';
-    if (res.handsScored < 500) return `Only ${res.handsScored} decided hands: far too few to tell any model apart from chance. Several thousand are needed.`;
+    const dropped = res.dropped && res.dropped.length
+      ? ` ${res.dropped.length} shoe${res.dropped.length > 1 ? 's were' : ' was'} left out: a streak of ${Math.max(...res.dropped.map(d => d.longestRun))} in a shoe that short is far likelier to be the same result logged repeatedly than a real deal.`
+      : '';
+    if (!res.handsScored) return 'No decided hands logged yet.' + dropped;
+    if (res.handsScored < 500) return `Only ${res.handsScored} decided hands: far too few to tell any model apart from chance. Several thousand are needed.` + dropped;
     const winners = res.models.filter(m => m.beatsBaseline);
-    if (!winners.length) return `No model beat the exact card odds on ${res.handsScored} unseen hands.`;
-    return `${winners.map(w => w.name).join(' and ')} beat the exact card odds on ${res.handsScored} unseen hands; worth a second look, not a bet.`;
+    if (!winners.length) return `No model beat the exact card odds on ${res.handsScored} unseen hands.` + dropped;
+    return `${winners.map(w => w.name).join(' and ')} beat the exact card odds on ${res.handsScored} unseen hands; worth a second look, not a bet.` + dropped;
   }
 
-  root.Evaluator = { run, verdict, MODELS, richFeatures };
+  // Shoes dealt by the engine, written in the form the app logs them. The same model test can then be
+  // run at a scale live play would need hundreds of hours to reach — on hands that are fair by
+  // construction, so anything a model "finds" in them is by definition noise.
+  function simulate(numShoes, seed) {
+    const rng = B.mulberry32(seed || 1);
+    const log = [];
+    for (let s = 1; s <= numShoes; s++) {
+      B.dealShoeHands(rng).forEach((h, i) => log.push({
+        site: 'sim', shoe: s, hand: i + 1, result: h.result, cards: { P: h.P, B: h.B },
+      }));
+    }
+    return log;
+  }
+
+  root.Evaluator = { run, verdict, simulate, MODELS, richFeatures };
   if (typeof module !== 'undefined') module.exports = root.Evaluator;
 })(typeof window !== 'undefined' ? window : globalThis);

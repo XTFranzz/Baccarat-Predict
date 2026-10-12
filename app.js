@@ -503,7 +503,8 @@
     }
     // Readings kept for the roadmap check follow the same rule: dealt after the roadmap cleared = this new shoe.
     for (const c of S.cards.recent || []) {
-      if (sawEmpty && c.epochAt > (S.emptyAt || 0)) { c.shoe = S.shoe.id; c.hist = 0; } else c.used = true;
+      if (sawEmpty && c.t > (S.emptyAt || 0) && !(S.cards.prevKeys && S.cards.prevKeys.has(c.key))) { c.shoe = S.shoe.id; c.hist = 0; c.dealOf = 1; }
+      else c.used = true;
     }
     S.history = []; S.maxVisible = 0;
     computePrediction();
@@ -543,21 +544,19 @@
     // When the roadmap catches up with several hands at once, the cards on the table belong to the
     // newest of them, not to the one being logged here, so no hand in that batch may claim them.
     S.cards.openEntry = pairable ? e : null;
-    const st = S.cards.stable;
-    // Cards belong to a result only if they were on the table during the same deal.
-    if (pairable && cardsBelong(st, e)) {
-      const fit = resolveFor(st, r);
-      if (fit) attachCards(e, fit, st);
-      else if (!attachFromRecent(e)) e.noCards = 'read a different hand';
-    } else if (pairable && attachFromRecent(e)) {
+    // Cards belong to a result if they were read during its deal (since the previous result) and give its winner.
+    if (pairable && attachFromRecent(e)) {
       // confirmed by the roadmap result
     } else if (!e.joined) {
       // Say in the log why a hand holds no cards, so a gap can be chased instead of guessed at.
+      const dealReads = (S.cards.recent || []).filter(c => c.shoe === e.shoe && c.dealOf === e.hand);
       e.noCards = !pairable ? 'roadmap caught up late'
-        : !st || st.used ? 'no confirmed reading'
-          : st.shoe !== e.shoe || st.epoch > e.epoch || e.epoch - st.epoch > 1 ? 'reading was another deal'
-            : 'reading did not line up';
+        : dealReads.length ? 'cards read did not give this winner (misread)' : 'no complete reading during this deal';
     }
+    // Start the next deal: the cards showing now (and those read during this deal) belong to this hand.
+    const showingNow = (S.cards.recent || []).filter(c => Date.now() - c.t < 4000).map(c => c.key);
+    S.cards.prevKeys = new Set([...(S.cards.dealKeys || []), ...showingNow, ...(S.cards.lastKey ? [S.cards.lastKey] : [])]);
+    S.cards.dealKeys = new Set();
     if (S.joining) return; // the caller renders once at the end
     computePrediction();
     renderAll();
@@ -569,16 +568,15 @@
   // that deal, use the most complete one that obeys the drawing rules and gives that winner.
   function attachFromRecent(e) {
     if (!e || e.cards || e.result == null) return false;
-    const cands = (S.cards.recent || []).filter(c => !c.used && c.shoe === e.shoe &&
-      (e.epoch - c.epoch === 0 || e.epoch - c.epoch === 1) && (e.hand - c.hist === 0 || e.hand - c.hist === 1) &&
-      ((c.byResult && c.byResult[e.result]) || c.result === e.result) && cardStamp(c) !== S.cards.attachedKey);
+    const cands = (S.cards.recent || []).filter(c => !c.used && c.shoe === e.shoe && c.dealOf === e.hand &&
+      ((c.byResult && c.byResult[e.result]) || c.result === e.result));
     if (!cands.length) return false;
     cands.sort((a, b) => b.n - a.n || b.t - a.t);   // most cards first (the finished deal), then the latest
     const fit = resolveFor(cands[0], e.result);
     if (!fit) return false;
     fit.roadConfirmed = true;
     attachCards(e, fit, cands[0]);
-    (S.cards.recent || []).forEach(c => { if (c.epoch === cands[0].epoch) c.used = true; });
+    (S.cards.recent || []).forEach(c => { if (c.shoe === e.shoe && c.dealOf === e.hand) c.used = true; });
     return true;
   }
 
@@ -758,12 +756,18 @@
     S.cards.last = hand;
     // Keep every legal reading of this deal: when the roadmap shows the winner, the deal is certainly over,
     // and the most complete reading that gives that winner is used (no second identical look needed).
-    if (hand.valid && S.shoe && S.cards.epoch !== S.cards.staleEpoch) {
-      S.cards.recent = (S.cards.recent || []).filter(c => S.cards.epoch - c.epoch <= 1).slice(-24);
+    if (hand.valid && S.shoe) {
+      // A deal is everything between two roadmap results. Cards already showing when the last result
+      // appeared (prevKeys) belong to that hand; any other cards are the next hand being dealt. This works
+      // even on tables where cards never fully disappear between hands.
+      const prev = S.cards.prevKeys || new Set();
+      const dealOf = prev.has(hand.key) ? S.history.length : S.history.length + 1;
+      if (!prev.has(hand.key)) (S.cards.dealKeys = S.cards.dealKeys || new Set()).add(hand.key);
+      S.cards.recent = (S.cards.recent || []).filter(c => Date.now() - c.t < 120000).slice(-40);
       S.cards.recent.push({ ...hand, t: Date.now(), epoch: S.cards.epoch, epochAt: S.cards.epochAt, shoe: S.shoe.id, hist: S.history.length,
-        n: hand.pRanks.length + hand.bRanks.length, used: false });
+        dealOf, n: hand.pRanks.length + hand.bRanks.length, used: false });
       const oe = S.cards.openEntry;
-      if (oe && !oe.cards && oe.shoe === S.shoe.id && oe.hand === S.history.length) attachFromRecent(oe);
+      if (oe && !oe.cards && oe.shoe === S.shoe.id && oe.hand === dealOf) attachFromRecent(oe);
     }
     // A hand that passes the drawing rules is complete (no more cards can come). One confident read is enough;
     // a less certain read must be seen the same way twice.
@@ -785,6 +789,8 @@
 
   // The roadmap may update before the cards are confirmed: attach to the latest hand if it matches.
   function tryAttachLatest() {
+    const oe = S.cards.openEntry;
+    if (oe && !oe.cards) { attachFromRecent(oe); return; }
     const st = S.cards.stable;
     if (!st || st.used || S.cards.attachedKey === st.key) return;
     const e = S.cards.openEntry;

@@ -40,7 +40,7 @@ module.exports = async function selftest(win) {
       return;
     }
     const interval = +(process.env.BP_INTERVAL || 1000);
-    const params = 'start=20&hands=26&cycle=' + (process.env.BP_CYCLE || 4000) + '&shuffle=7000&seed=' + (process.env.BP_SEED || 77) + (process.env.BP_BEAD === '0' ? '&bead=0' : '') + (process.env.BP_ZOOM ? '&zoom=' + process.env.BP_ZOOM : '');
+    const params = 'start=20&hands=26&cycle=' + (process.env.BP_CYCLE || 4000) + '&shuffle=7000&seed=' + (process.env.BP_SEED || 77) + (process.env.BP_BEAD === '0' ? '&bead=0' : '') + (process.env.BP_ZOOM ? '&zoom=' + process.env.BP_ZOOM : '') + (process.env.BP_KEEPCARDS ? '&keepcards=1' : '');
     const url = pathToFileURL(path.join(__dirname, 'test', 'fake-table.html')).href + '?' + params;
     let guest;
     if (process.env.BP_SELFTEST_MODE === 'window') {

@@ -144,7 +144,8 @@
       window.truth.shoes.at(-1).hands.push({ P: hand.P.map(c => c.r), B: hand.B.map(c => c.r), result: hand.result, at: Date.now() });
       drawRoads();
     }, CYCLE * 0.4);
-    setTimeout(() => { drawCards(null); window.truth.current = null; }, CYCLE * 0.85);
+    // ?keepcards=1: like Pragmatic Play, the cards stay on the table until the next deal replaces them
+    if (qs.get('keepcards') !== '1') setTimeout(() => { drawCards(null); window.truth.current = null; }, CYCLE * 0.85);
     setTimeout(play, CYCLE);
   }
   function shuffle() {

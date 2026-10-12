@@ -284,6 +284,17 @@
     const rx = fromLeft ? 0 : Math.max(0, sig.x0 - 1.5 * p);
     const rect = { x: rx, y: sig.y0 - 0.8 * p, width: img.width - rx, height: 6.6 * p };
     const { labels, w, h, x0, y0 } = labelImage(img, rect);
+    // A roadmap panel is mostly plain background (white or dark) and grid lines. When the band is mostly
+    // strong colour, something covers it (a shuffle screen, the table felt, a pop-up): report it as covered,
+    // never as a road full of red or blue marks, and never as an empty road (which would mean a shuffle).
+    {
+      let neutral = 0, tot = 0;
+      for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+        const q = ((y0 + y) * img.width + x0 + x) * 4, d = img.data;
+        tot++; if (Math.max(d[q], d[q + 1], d[q + 2]) - Math.min(d[q], d[q + 1], d[q + 2]) < 40) neutral++;
+      }
+      if (tot && neutral / tot < 0.3) return { seq: [], marks: [], note: 'roadmap covered', box: null, hidden: true };
+    }
     const { blobs, ids } = components(labels, w, h, true);
     const leftEdge = sig.x0 - x0;
     const filled = sig.fill > 0.55; // Bead Plate: ties are full-size green circles, so they count as marks

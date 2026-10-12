@@ -318,6 +318,7 @@
       const rect = boxToImg(ub, img);
       const res = readBoxed(img, rect, S.boxHolder || (S.boxHolder = { sig: null }));
       S.roadBox = rect; S.sig = res.sig; S.sig2 = null;
+      if (res.hidden) { setStep('Road', 'busy', 'The roadmap is covered (shuffle screen or pop-up). Waiting for it to show again…'); return; }
       S.lastRead = res;
       renderBoxStatus();
       if (!res.sig || !res.seq.length) {
@@ -335,6 +336,7 @@
       S.sig = pick.main; S.sig2 = pick.check;
     }
     const res = V.readRoadLive(img, S.sig);
+    if (res.hidden) { setStep('Road', 'busy', 'The roadmap is covered (shuffle screen or pop-up). Waiting for it to show again…'); return; }
     // Cross-check with the second road (e.g. Big Road vs Bead Plate): one usually shows only the latest hands,
     // so the shorter reading must match the end of the longer one. If not, wait for the next scan.
     if (S.sig2 && res.seq.length) {

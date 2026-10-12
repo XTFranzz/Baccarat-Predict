@@ -448,6 +448,23 @@
   // What a roadmap player would bet: follow a repeating column pattern, expect a streak to stop where this
   // shoe's streaks stop, ride a streak, follow a ping-pong, or follow the derived roads.
   // Returns { side, reason, pattern } (side null when the roadmap is too short).
+  // A stable label for each kind of roadmap call, used to look up how often that kind was right in simulation.
+  function pickCategory(pick) {
+    if (!pick || !pick.side) return null;
+    const r = pick.reason || '', p = pick.pattern;
+    if (/^(Pattern|Staircase)/.test(r) && p) {
+      if (p.kind === 'results') return `Result cycle of ${p.period}`;
+      if (p.kind === 'staircase') return `Staircase, ${/continue/.test(r) ? 'continue' : 'switch'}`;
+      return `Column cycle of ${p.period}, ${/continue/.test(r) ? 'continue the column' : 'switch'}`;
+    }
+    const broke = /pattern broke/.test(r) ? ' (after a pattern broke)' : '';
+    if (/expect a break/.test(r)) return 'Streak limit: expect a break' + broke;
+    if (/ride the streak/.test(r)) return 'Ride the streak' + broke;
+    if (/chop/.test(r)) return 'Follow the ping-pong' + broke;
+    if (/Derived/.test(r)) return 'Derived roads' + broke;
+    return 'Follow the last winner' + broke;
+  }
+
   function roadmapPick(h) {
     const n = noTies(h);
     if (n.length < 2) return { side: null, reason: 'Not enough results yet' };
@@ -481,7 +498,7 @@
     return { side: last, pattern: pat, reason: `${note}No clear pattern: follow the last winner` };
   }
 
-  root.Baccarat = { findPatterns, columnPattern, roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, dealShoeHands, payout, STRATEGIES, backtest,
+  root.Baccarat = { pickCategory, findPatterns, columnPattern, roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, dealShoeHands, payout, STRATEGIES, backtest,
     simulateStrategies, conditionalNext, bigRoadCols, streakLen, noTies };
   if (typeof module !== 'undefined') module.exports = root.Baccarat;
 })(typeof window !== 'undefined' ? window : globalThis);

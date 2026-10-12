@@ -14,4 +14,5 @@ contextBridge.exposeInMainWorld('bridge', {
   openPath: p => ipcRenderer.invoke('shell:open', p),
   exportLearning: data => ipcRenderer.invoke('learning:export', data),
   importLearning: () => ipcRenderer.invoke('learning:import'),
+  loadPatternStats: () => ipcRenderer.invoke('patternstats:load'),
 });

@@ -46,6 +46,8 @@ npm start
 - **Odds.** The app enumerates the legal next-hand draws without replacement from the tracked card-value counts and calculates Banker, Player, and Tie probabilities exactly. Before any cards are tracked it uses standard 8-deck odds. After joining mid-shoe, cards dealt before joining are unknown, so the calculation is exact for the tracked counts but the shoe composition is partial until the next shuffle.
 - **Learning.** A logistic model updates after each eligible live non-tie result using card odds, the last winner, streak, ping-pong, recent side frequency, Big Road columns, and derived roads. It is experimental: roadmap patterns may have no predictive signal, and results do not promise improved accuracy or profit.
 
+**Pattern statistics.** `pattern-stats.json` holds the results of 100,000 simulated shoes: for every kind of roadmap call (column cycles, result cycles, staircases, streak limit, ride the streak, ping-pong, derived roads), how often it was right on the next hand. The app shows the matching figure under every roadmap pick. Regenerate it with `node scripts/pattern-stats.js 100000`.
+
 **Using it on another computer.** Cloning the repo gives the code only. To bring what the app has learned, press **Export learning data** (Settings and tools). This writes `learning-data/baccarat-learning.json` into the project folder. Commit and push it, pull on the other computer, and press **Import learning data** there. Hands are merged without duplicates, and the model that has learned from more live hands is kept.
 
 Everything is saved in the app's data folder: the hand log, the learned model, settings, and each site's card setup.

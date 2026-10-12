@@ -1,0 +1,148 @@
+{
+ "shoes": 100000,
+ "made": "2026-10-12T20:01:34.698Z",
+ "allCalls": 6953873,
+ "allRate": 0.49978,
+ "categories": {
+  "Derived roads": {
+   "calls": 1780538,
+   "right": 889088,
+   "rate": 0.49934
+  },
+  "Column cycle of 1, switch": {
+   "calls": 986241,
+   "right": 493385,
+   "rate": 0.50027
+  },
+  "Ride the streak": {
+   "calls": 699765,
+   "right": 349737,
+   "rate": 0.49979
+  },
+  "Follow the ping-pong": {
+   "calls": 553609,
+   "right": 276942,
+   "rate": 0.50025
+  },
+  "Result cycle of 3": {
+   "calls": 527413,
+   "right": 263051,
+   "rate": 0.49876
+  },
+  "Derived roads (after a pattern broke)": {
+   "calls": 446615,
+   "right": 223810,
+   "rate": 0.50113
+  },
+  "Ride the streak (after a pattern broke)": {
+   "calls": 428957,
+   "right": 214495,
+   "rate": 0.50004
+  },
+  "Column cycle of 1, continue the column": {
+   "calls": 315884,
+   "right": 157859,
+   "rate": 0.49974
+  },
+  "Streak limit: expect a break": {
+   "calls": 232787,
+   "right": 116107,
+   "rate": 0.49877
+  },
+  "Streak limit: expect a break (after a pattern broke)": {
+   "calls": 192233,
+   "right": 96189,
+   "rate": 0.50038
+  },
+  "Result cycle of 4": {
+   "calls": 174972,
+   "right": 87354,
+   "rate": 0.49925
+  },
+  "Result cycle of 5": {
+   "calls": 125208,
+   "right": 62892,
+   "rate": 0.5023
+  },
+  "Staircase, continue": {
+   "calls": 102726,
+   "right": 51426,
+   "rate": 0.50061
+  },
+  "Follow the last winner": {
+   "calls": 93821,
+   "right": 46649,
+   "rate": 0.49721
+  },
+  "Column cycle of 2, continue the column": {
+   "calls": 60077,
+   "right": 30168,
+   "rate": 0.50216
+  },
+  "Result cycle of 6": {
+   "calls": 50711,
+   "right": 25398,
+   "rate": 0.50084
+  },
+  "Column cycle of 2, switch": {
+   "calls": 47461,
+   "right": 23695,
+   "rate": 0.49925
+  },
+  "Column cycle of 3, switch": {
+   "calls": 45414,
+   "right": 22370,
+   "rate": 0.49258
+  },
+  "Result cycle of 7": {
+   "calls": 26257,
+   "right": 13053,
+   "rate": 0.49712
+  },
+  "Column cycle of 3, continue the column": {
+   "calls": 15604,
+   "right": 7831,
+   "rate": 0.50186
+  },
+  "Staircase, switch": {
+   "calls": 12926,
+   "right": 6460,
+   "rate": 0.49977
+  },
+  "Column cycle of 4, switch": {
+   "calls": 12487,
+   "right": 6293,
+   "rate": 0.50396
+  },
+  "Result cycle of 8": {
+   "calls": 11435,
+   "right": 5691,
+   "rate": 0.49768
+  },
+  "Column cycle of 5, switch": {
+   "calls": 4207,
+   "right": 2139,
+   "rate": 0.50844
+  },
+  "Column cycle of 4, continue the column": {
+   "calls": 3700,
+   "right": 1843,
+   "rate": 0.49811
+  },
+  "Column cycle of 6, switch": {
+   "calls": 1251,
+   "right": 659,
+   "rate": 0.52678
+  },
+  "Column cycle of 5, continue the column": {
+   "calls": 1153,
+   "right": 585,
+   "rate": 0.50737
+  },
+  "Column cycle of 6, continue the column": {
+   "calls": 421,
+   "right": 206,
+   "rate": 0.48931
+  }
+ }
+}

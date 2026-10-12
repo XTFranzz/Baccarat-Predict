@@ -1119,6 +1119,10 @@
     const side = seen >= MIN_HANDS ? (useRoad ? road.side : modelSide) : null;
     const chance = side ? (side === 'B' ? p.mathQ : 1 - p.mathQ) : null;
     const why = side ? (useRoad ? road.reason : `the model leans ${NAMES[modelSide]} (${pct(conf)})`) : '';
+    // What the app knows from simulation about this exact kind of roadmap call.
+    const cat = useRoad ? B.pickCategory(road) : null;
+    const ps = S.patternStats, known = cat && ps && ps.categories[cat];
+    const simLine = known ? `In ${ps.shoes.toLocaleString()} simulated shoes, calls like this (“${cat}”) were right ${pct(known.rate)} of ${known.calls.toLocaleString()} times.` : '';
     badge.textContent = side ? 'Next-hand pick' : 'Watching'; badge.className = 'pill';
     const usingCards = S.shoe && S.shoe.cardsSeen > 0;
     const cardSource = !usingCards ? 'the standard 8-deck shoe'
@@ -1132,7 +1136,7 @@
         <div>
           <div class="title">${side ? `Next hand: ${NAMES[side]}` : `Watching the shoe: ${seen} of ${MIN_HANDS} hands`}</div>
           <div class="muted small">${side
-            ? `${why.charAt(0).toUpperCase() + why.slice(1)}. Real chance to win if not a tie: about ${pct(chance)}. Not a guarantee.`
+            ? `${why.charAt(0).toUpperCase() + why.slice(1)}. Real chance to win if not a tie: about ${pct(chance)}. Not a guarantee.${simLine ? '<br>' + simLine : ''}`
             : `A pick appears once ${MIN_HANDS} results (not counting ties) are on the roadmap.`}</div>
         </div>
       </div>
@@ -1658,6 +1662,7 @@
       $('startWatchAgainName').textContent = S.settings.lastSource;
     }
     $('headlinePick').value = S.settings.headline || 'roadmap';
+    S.patternStats = await bridge.loadPatternStats();
     renderSimTrainInfo();
     renderAll();
     $('startInput').focus();

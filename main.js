@@ -124,6 +124,10 @@ app.whenReady().then(() => {
     return dir;
   });
   ipcMain.handle('shell:open', (_e, p) => shell.openPath(p));
+  // Simulation results that ship with the app (how often each kind of roadmap call was right).
+  ipcMain.handle('patternstats:load', () => {
+    try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'pattern-stats.json'), 'utf8')); } catch { return null; }
+  });
 
   // Learning data shared through the project folder (so it can go to GitHub and onto another computer).
   const learningFile = path.join(__dirname, 'learning-data', 'baccarat-learning.json');

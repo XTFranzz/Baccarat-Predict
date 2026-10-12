@@ -20,6 +20,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
+      // Keep reading at full speed when the app window is covered (e.g. by the casino in Chrome).
+      // Without this, Chromium slows the reading timer to a crawl and hands are missed.
+      backgroundThrottling: false,
     },
   });
   win.setMenuBarVisibility(false);

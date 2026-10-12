@@ -173,7 +173,7 @@ module.exports = async function selftest(win) {
 
     // 3. Play through the shuffle into a new shoe
     await until('shuffle + 6 hands of new shoe', () => T('truth.shoes.length >= 2 && truth.shoes[1].hands.length >= 6'), 150000);
-    await wait(2500);
+    await wait(4500); // the newest result needs two identical reads before it is accepted
     const S = JSON.parse(await js(`JSON.stringify({hist: window.__bp.S.history.join(''), shoe: window.__bp.S.shoe, log: window.__bp.S.log})`));
     log('shoe events now', await js('JSON.stringify(window.__bp.S.events.map(e => ({ type: e.type, seq: e.seq, from: e.from, to: e.to })))'));
     const truth2 = JSON.parse(await T('JSON.stringify(truth.shoes[1].hands)'));
@@ -205,6 +205,16 @@ module.exports = async function selftest(win) {
     log(`logged hands ${S.log.length}, with cards ${withCards}/${total}, cards exactly right ${right}/${withCards}`);
     const after = S.log.filter(e => e.t > setupDone + 1500);
     log(`after setup: ${after.filter(e => e.cards).length}/${after.length} hands had cards recorded`);
+    const why = {}; for (const e of after) { const k = e.cards ? (e.cards.roadConfirmed ? 'cards (confirmed by roadmap)' : 'cards') : (e.noCards || 'no reason'); why[k] = (why[k] || 0) + 1; }
+    log('after setup by outcome:', JSON.stringify(why));
+    log('marks debug:', await js(`(() => { const S = window.__bp.S; const r = RoadVision.readRoadLive(S.frame, S.sig);
+      return JSON.stringify({ sig: { x0: S.sig.x0, y0: S.sig.y0, d: S.sig.d, pitch: +S.sig.pitch.toFixed(2), fill: +S.sig.fill.toFixed(2) }, seq: r.seq.join(''), marks: r.marks.map(m => m.col + ',' + m.row + m.side + '@' + Math.round(m.cx) + ',' + m.minY) }); })()`));
+    log('timing:', await js("JSON.stringify({ sinceScanStart: Date.now() - window.__bp.S.scanStarted, scanning: window.__bp.S.scanning, sinceLastScan: Date.now() - (window.__bp.S.lastScanAt || 0), sinceRoad: Date.now() - (window.__bp.S.lastRoadAt || 0), captureMs: window.__bp.S.captureMs, scanMs: window.__bp.S.scanMs, simTraining: !!document.getElementById('btnSimTrain').disabled })"));
+    log('scan errors:', await js("(window.__bp.S.errorCount || 0) + ' ' + (window.__bp.S.lastError || '')"));
+    log('road debug:', await js(`JSON.stringify({ readNow: window.__bp.S.lastRead && window.__bp.S.lastRead.seq.join(''), history: window.__bp.S.history.join(''),
+      pending: window.__bp.S.pendingRoadKey, kind: window.__bp.S.sig && window.__bp.S.sig.kind, check: window.__bp.S.sig2 && window.__bp.S.sig2.kind,
+      disagree: window.__bp.S.roadDisagree, box: !!window.__bp.site().roadBox, road: document.querySelector('#stepRoad span').textContent })`));
+    log('card status now:', await js("document.querySelector('#stepCards span').textContent"));
     log('shoe events', JSON.stringify(JSON.parse(await js('JSON.stringify(window.__bp.S.events)')).map(e => ({ ...e, t: undefined }))));
     const counted = S.log.filter(e => e.shoe === S.shoe.id && e.cards).reduce((n, e) => n + e.cards.P.length + e.cards.B.length, 0);
     log('count check: cards in log', counted, 'vs shoe counter', S.shoe.cardsSeen, counted === S.shoe.cardsSeen ? 'OK' : 'MISMATCH');
@@ -219,9 +229,10 @@ module.exports = async function selftest(win) {
         roadmapComparisons: forecasts.filter(e => e.road).length,
         headline: headline };
     })()`);
-    // The headline names a side only when the evidence gate passed; otherwise it says there is no bet.
+    // The headline always names a next-hand side once 4 results are on the roadmap (the evidence gate is
+    // shown underneath as the edge check); before that it says how many hands it is still watching for.
     if (forecastCheck.badSides || forecastCheck.missingModelProbability || !forecastCheck.roadmapComparisons ||
-        !/^(Reliable next hand: (Banker|Player)|No bet worth making on this hand)$/.test(forecastCheck.headline))
+        !/^(Next hand: (Banker|Player)|Watching the shoe: \d of \d hands)$/.test(forecastCheck.headline))
       throw new Error('logged forecast or displayed next-hand headline is invalid: ' + JSON.stringify(forecastCheck));
     log('pattern-aware model forecasts', JSON.stringify(forecastCheck), 'OK; model hands', await js('window.__bp.S.model.n'));
 

@@ -267,8 +267,10 @@
       processRoad(img);
       drawFrames();
       S.scanMs = Math.round(performance.now() - t0);
+      S.lastScanAt = Date.now();
     } catch (err) {
       console.error(err);
+      S.lastError = String(err && err.stack || err); S.errorCount = (S.errorCount || 0) + 1;
     } finally { S.scanning = false; }
   }
 
@@ -343,9 +345,11 @@
           if (++S.roadDisagree < 8) { setStep('Road', 'busy', 'Double-checking the roadmap…'); return; }
           // Still disagreeing: trust the Bead Plate (one mark per hand, simplest to read) and use the other as the check.
           if (S.sig2.kind === 'Bead Plate' && S.sig.kind !== 'Bead Plate') {
-            [S.sig, S.sig2] = [S.sig2, S.sig]; S.roadDisagree = 0; S.pendingRoadKey = null;
-            return;
+            [S.sig, S.sig2] = [S.sig2, S.sig]; S.pendingRoadKey = null;
           }
+          // The second road keeps disagreeing (an unusual layout): stop cross-checking so reading never stalls.
+          S.sig2 = null; S.roadDisagree = 0;
+          return;
         } else S.roadDisagree = 0;
       }
     }
@@ -373,7 +377,7 @@
       : `Reading the ${S.sig.kind}${site().roadBox ? ' inside your box' : ''}`);
     if (tiny && !S.tinyWarned) { S.tinyWarned = true; toast('The roadmap is very small. Make the casino window bigger for accurate reading.'); }
     if (!tiny) S.tinyWarned = false;
-    S.lastRead = res;
+    S.lastRead = res; S.lastRoadAt = Date.now();
     // A change must be read the same way on two scans in a row. This filters the blinking newest mark,
     // hover effects and half-drawn frames. (An empty road already needs two scans before it counts.)
     const key = res.seq.join('');
@@ -497,6 +501,10 @@
       if (sawEmpty && st.epochAt > (S.emptyAt || 0)) { st.shoe = S.shoe.id; st.hist = 0; } // first hand of the new shoe
       else st.used = true; // cards from the old shoe
     }
+    // Readings kept for the roadmap check follow the same rule: dealt after the roadmap cleared = this new shoe.
+    for (const c of S.cards.recent || []) {
+      if (sawEmpty && c.epochAt > (S.emptyAt || 0)) { c.shoe = S.shoe.id; c.hist = 0; } else c.used = true;
+    }
     S.history = []; S.maxVisible = 0;
     computePrediction();
     toast('New shoe detected. Counting cards from the start.');
@@ -540,7 +548,9 @@
     if (pairable && cardsBelong(st, e)) {
       const fit = resolveFor(st, r);
       if (fit) attachCards(e, fit, st);
-      else e.noCards = 'read a different hand';
+      else if (!attachFromRecent(e)) e.noCards = 'read a different hand';
+    } else if (pairable && attachFromRecent(e)) {
+      // confirmed by the roadmap result
     } else if (!e.joined) {
       // Say in the log why a hand holds no cards, so a gap can be chased instead of guessed at.
       e.noCards = !pairable ? 'roadmap caught up late'
@@ -553,6 +563,23 @@
     renderAll();
     flash('prediction');
     scheduleSave();
+  }
+
+  // The roadmap result confirms the deal is finished and which side won. Among the readings taken during
+  // that deal, use the most complete one that obeys the drawing rules and gives that winner.
+  function attachFromRecent(e) {
+    if (!e || e.cards || e.result == null) return false;
+    const cands = (S.cards.recent || []).filter(c => !c.used && c.shoe === e.shoe &&
+      (e.epoch - c.epoch === 0 || e.epoch - c.epoch === 1) && (e.hand - c.hist === 0 || e.hand - c.hist === 1) &&
+      ((c.byResult && c.byResult[e.result]) || c.result === e.result) && cardStamp(c) !== S.cards.attachedKey);
+    if (!cands.length) return false;
+    cands.sort((a, b) => b.n - a.n || b.t - a.t);   // most cards first (the finished deal), then the latest
+    const fit = resolveFor(cands[0], e.result);
+    if (!fit) return false;
+    fit.roadConfirmed = true;
+    attachCards(e, fit, cands[0]);
+    (S.cards.recent || []).forEach(c => { if (c.epoch === cands[0].epoch) c.used = true; });
+    return true;
   }
 
   function attachCards(entry, st, original) {
@@ -568,7 +595,8 @@
     S.cards.attachedKey = cardStamp(st);
     st.used = true;
     if (original) original.used = true;
-    if (!st.corrected) learnTemplates(st);
+    if (!st.corrected && !(st.roadConfirmed && !st.confident)) learnTemplates(st);
+    if (st.roadConfirmed) entry.cards.roadConfirmed = true;
     setStep('Cards', 'ok', `Recorded hand ${entry.hand}: Player ${st.pRanks.join(' ')} · Banker ${st.bRanks.join(' ')}.` + cardsProgress());
     computePrediction();
     renderAll();
@@ -728,6 +756,15 @@
     }
     if (hand.key === S.cards.lastKey) S.cards.streak++; else { S.cards.lastKey = hand.key; S.cards.streak = 1; }
     S.cards.last = hand;
+    // Keep every legal reading of this deal: when the roadmap shows the winner, the deal is certainly over,
+    // and the most complete reading that gives that winner is used (no second identical look needed).
+    if (hand.valid && S.shoe && S.cards.epoch !== S.cards.staleEpoch) {
+      S.cards.recent = (S.cards.recent || []).filter(c => S.cards.epoch - c.epoch <= 1).slice(-24);
+      S.cards.recent.push({ ...hand, t: Date.now(), epoch: S.cards.epoch, epochAt: S.cards.epochAt, shoe: S.shoe.id, hist: S.history.length,
+        n: hand.pRanks.length + hand.bRanks.length, used: false });
+      const oe = S.cards.openEntry;
+      if (oe && !oe.cards && oe.shoe === S.shoe.id && oe.hand === S.history.length) attachFromRecent(oe);
+    }
     // A hand that passes the drawing rules is complete (no more cards can come). One confident read is enough;
     // a less certain read must be seen the same way twice.
     if (hand.valid && (hand.confident || S.cards.streak >= 2) && S.cards.epoch !== S.cards.staleEpoch) {
@@ -741,7 +778,7 @@
       tryAttachLatest();
     } else {
       // Say which of the two it is actually waiting for, so a hand that sits here is not a mystery.
-      const why = hand.valid ? 'checking the same reading once more' : 'waiting for the deal to finish';
+      const why = hand.valid ? 'will be confirmed by the roadmap result' : 'waiting for the deal to finish';
       setStep('Cards', 'busy', `Cards visible: Player ${hand.pRanks.join(' ')} · Banker ${hand.bRanks.join(' ')}; ${why}.` + cardsProgress());
     }
   }

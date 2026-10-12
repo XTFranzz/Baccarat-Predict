@@ -208,6 +208,18 @@
           <button id="btnLearnImport">Import learning data</button>
           <button id="btnResetModel" class="ghost">Reset learning</button>
         </div>
+        <div class="row small">
+          <label>Next-hand pick
+            <select id="headlinePick">
+              <option value="roadmap">Roadmap pattern (follows the roadmap)</option>
+              <option value="model">Model (mostly Banker)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="btnSimTrain">Train on 20,000 simulated hands</button>
+          <span id="simTrainInfo" class="muted small"></span>
+        </div>
         <h4>Simulation</h4>
         <p class="muted small">Deals real 8-deck shoes and tests the pattern methods, to show how often they really win.</p>
         <div class="row small">

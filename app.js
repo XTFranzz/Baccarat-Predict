@@ -1063,10 +1063,18 @@
       return;
     }
     // Use the learned card-and-roadmap model as the experimental forecast; show exact shoe odds separately.
-    const side = p.decision.side, modelSide = p.side, conf = p.conf, probs = p.mathProbs;
+    const modelSide = p.side, conf = p.conf, probs = p.mathProbs;
     const road = p.road && p.road.side ? p.road : null;
     const liveStats = L.stats(S.log.filter(e => !e.replay));
-    badge.textContent = 'Experimental model'; badge.className = 'pill';
+    // Next-hand pick: shown once 4 results are on the roadmap. It follows the roadmap pattern (default)
+    // or the model. The "edge check" below it says whether there is real evidence to bet.
+    const MIN_HANDS = 4;
+    const seen = B.noTies(S.history).length;
+    const useRoad = (S.settings.headline || 'roadmap') !== 'model' && road;
+    const side = seen >= MIN_HANDS ? (useRoad ? road.side : modelSide) : null;
+    const chance = side ? (side === 'B' ? p.mathQ : 1 - p.mathQ) : null;
+    const why = side ? (useRoad ? road.reason : `the model leans ${NAMES[modelSide]} (${pct(conf)})`) : '';
+    badge.textContent = side ? 'Next-hand pick' : 'Watching'; badge.className = 'pill';
     const usingCards = S.shoe && S.shoe.cardsSeen > 0;
     const cardSource = !usingCards ? 'the standard 8-deck shoe'
       : S.shoe.fromStart ? 'the tracked cards remaining in this shoe'
@@ -1075,14 +1083,15 @@
     const plusEv = ['B', 'P', 'T'].filter(s => p.ev[s] > 0);
     el.innerHTML = `
       <div class="big">
-        <div class="side-chip ${side || 'none'}">${side || '–'}</div>
+        <div class="side-chip ${side || 'none'}">${side || '…'}</div>
         <div>
-          <div class="title">${side ? `Reliable next hand: ${NAMES[side]}` : 'No bet worth making on this hand'}</div>
+          <div class="title">${side ? `Next hand: ${NAMES[side]}` : `Watching the shoe: ${seen} of ${MIN_HANDS} hands`}</div>
           <div class="muted small">${side
-            ? `${p.decision.reason}. This is still an estimate, not a guarantee.`
-            : `${p.decision.reason}. The model leans ${NAMES[modelSide]} at ${pct(conf)} conditional on no tie, which is not a reason to bet.`}</div>
+            ? `${why.charAt(0).toUpperCase() + why.slice(1)}. Real chance to win if not a tie: about ${pct(chance)}. Not a guarantee.`
+            : `A pick appears once ${MIN_HANDS} results (not counting ties) are on the roadmap.`}</div>
         </div>
       </div>
+      <div class="note"><b>Edge check:</b> ${p.decision.side ? `${p.decision.reason}.` : `${p.decision.reason}. So this pick has no proven edge: treat it as close to a coin flip.`}</div>
       ${road ? `<div class="note">Roadmap pattern view: <b>${NAMES[road.side]}</b> — ${road.reason}. Historical pattern accuracy: ${liveStats.roadAccuracy == null ? '–' : pct(liveStats.roadAccuracy)} of ${liveStats.roadN} settled picks; this is not proof of an edge.</div>` : ''}
       <div class="note">Model view: <b>${NAMES[modelSide]}</b> (${pct(conf)} conditional estimate). It is experimental and is not reliable unless the evidence gate passes.</div>
       <div class="bars">
@@ -1553,6 +1562,39 @@
   };
 
   // ------------------------------------------------------------------ start
+  $('headlinePick').onchange = e => { S.settings.headline = e.target.value; renderPrediction(); scheduleSave(); };
+
+  // Train the model on simulated shoes (real 8-deck shoes, official drawing rules), then test it honestly
+  // on fresh simulated shoes: predict the next hand after watching 4-6 hands.
+  // Runs in a background worker so the live screen reading never slows down.
+  let simWorker = null;
+  function trainOnSimulation(hands = 20000) {
+    if (simWorker) return;
+    $('btnSimTrain').disabled = true;
+    simWorker = new Worker('simworker.js');
+    const startN = S.model.n || 0;
+    simWorker.onmessage = e => {
+      const d = e.data;
+      if (d.progress) { $('simTrainInfo').textContent = `Training… ${d.progress.toLocaleString()} of ${hands.toLocaleString()} hands`; return; }
+      if (!d.done) return;
+      // Keep the simulated experience plus any live hands learned while it trained.
+      const liveLearned = (S.model.n || 0) - startN;
+      S.model = L.createModel({ w: d.model.w, n: d.model.n + liveLearned, simHands: (S.model.simHands || 0) + d.hands });
+      S.settings.simTest = { ...d.test, at: Date.now() };
+      simWorker.terminate(); simWorker = null; $('btnSimTrain').disabled = false;
+      renderSimTrainInfo(); computePrediction(); renderAll(); scheduleSave();
+    };
+    simWorker.onerror = () => { simWorker = null; $('btnSimTrain').disabled = false; $('simTrainInfo').textContent = 'Simulation training failed.'; };
+    simWorker.postMessage({ model: S.model, hands, seed: (Date.now() & 0x7fffffff) >>> 0, headline: S.settings.headline || 'roadmap' });
+  }
+  function renderSimTrainInfo() {
+    const t = S.settings.simTest;
+    $('simTrainInfo').textContent = S.model.simHands
+      ? `Trained on ${S.model.simHands.toLocaleString()} simulated hands.` + (t ? ` Test on fresh shoes: next hand right ${pct(t.rate)} of ${t.n.toLocaleString()}.` : '')
+      : 'Not trained on simulated hands yet.';
+  }
+  $('btnSimTrain').onclick = () => trainOnSimulation(20000);
+
   (async function init() {
     if (!bridge) {
       document.body.innerHTML = '<p style="padding:24px">Run this app with <b>npm start</b> (or start.bat). It needs the desktop app to open the game.</p>';
@@ -1568,9 +1610,13 @@
       $('startWatchAgain').hidden = false;
       $('startWatchAgainName').textContent = S.settings.lastSource;
     }
+    $('headlinePick').value = S.settings.headline || 'roadmap';
+    renderSimTrainInfo();
     renderAll();
     $('startInput').focus();
     window.__bp.ready = true;
+    // First run: give the model its simulated experience in the background.
+    if (!S.model.simHands) setTimeout(() => trainOnSimulation(20000), 1500);
     if (S.cleanedUp) toast('Your old log had misread hands, so it was backed up and learning starts fresh.');
     // Measure streak and ping-pong behaviour once, in the background.
     setTimeout(() => { runTable = B.runStats(6000, 2024); renderRoadRead(); }, 300);

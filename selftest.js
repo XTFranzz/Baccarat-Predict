@@ -90,6 +90,9 @@ module.exports = async function selftest(win) {
       log('box saved under:', await js("JSON.stringify({ host: window.__bp.S.host, sites: Object.keys(window.__bp.S.sites), box: !!window.__bp.site().roadBox })"));
       log('box marks:', await js("JSON.stringify(window.__bp.S.lastRead && window.__bp.S.lastRead.marks.map(m => m.col + ',' + m.row + m.side))"));
       if (process.env.BP_QUICK) {
+        await wait(6000);
+        log('sim training:', await js("document.getElementById('simTrainInfo').textContent"));
+        log('main card:', await js("document.querySelector('#prediction .title').textContent + ' | ' + document.querySelector('#prediction .big .muted').textContent"));
         await js(`document.getElementById('prediction').scrollIntoView(); true`); await wait(400); await shot('quick-prediction');
         app.quit(); return;
       }

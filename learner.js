@@ -46,7 +46,8 @@
 
   function createModel(saved) {
     // Older saved models had fewer signals: keep what they learned and start new signals at zero.
-    if (saved && Array.isArray(saved.w) && saved.w.length <= PRIOR.length) return { w: saved.w.concat(PRIOR.slice(saved.w.length)), n: saved.n || 0 };
+    if (saved && Array.isArray(saved.w) && saved.w.length <= PRIOR.length)
+      return { w: saved.w.concat(PRIOR.slice(saved.w.length)), n: saved.n || 0, simHands: saved.simHands || 0 };
     return { w: PRIOR.slice(), n: 0 };
   }
 

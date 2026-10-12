@@ -217,7 +217,12 @@
           </label>
         </div>
         <div class="row">
-          <button id="btnSimTrain">Train on 20,000 simulated hands</button>
+          <select id="simSize">
+            <option value="20000">20,000 hands</option>
+            <option value="100000">100,000 hands</option>
+            <option value="500000" selected>500,000 hands</option>
+          </select>
+          <button id="btnSimTrain">Train on simulated hands</button>
           <span id="simTrainInfo" class="muted small"></span>
         </div>
         <h4>Simulation</h4>

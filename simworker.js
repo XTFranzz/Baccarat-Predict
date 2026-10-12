@@ -14,7 +14,7 @@ onmessage = e => {
     const r = shoe[i++];
     if (r !== 'T') {
       L.update(m, L.features(h, BASE_Q), r === 'B' ? 1 : 0);
-      if (++done % 2000 === 0) postMessage({ progress: done });
+      if (++done % 10000 === 0) postMessage({ progress: done });
     }
     h.push(r);
   }

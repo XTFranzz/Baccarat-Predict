@@ -1593,7 +1593,7 @@
       ? `Trained on ${S.model.simHands.toLocaleString()} simulated hands.` + (t ? ` Test on fresh shoes: next hand right ${pct(t.rate)} of ${t.n.toLocaleString()}.` : '')
       : 'Not trained on simulated hands yet.';
   }
-  $('btnSimTrain').onclick = () => trainOnSimulation(20000);
+  $('btnSimTrain').onclick = () => trainOnSimulation(+$('simSize').value || 20000);
 
   (async function init() {
     if (!bridge) {
@@ -1616,7 +1616,8 @@
     $('startInput').focus();
     window.__bp.ready = true;
     // First run: give the model its simulated experience in the background.
-    if (!S.model.simHands) setTimeout(() => trainOnSimulation(20000), 1500);
+    if (S.settings.pendingSim) { const n = S.settings.pendingSim; delete S.settings.pendingSim; setTimeout(() => trainOnSimulation(n), 1500); }
+    else if (!S.model.simHands) setTimeout(() => trainOnSimulation(20000), 1500);
     if (S.cleanedUp) toast('Your old log had misread hands, so it was backed up and learning starts fresh.');
     // Measure streak and ping-pong behaviour once, in the background.
     setTimeout(() => { runTable = B.runStats(6000, 2024); renderRoadRead(); }, 300);

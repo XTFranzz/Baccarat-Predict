@@ -1259,19 +1259,21 @@
     // hand for interest, but scoring it here would report a win rate for bets never recommended.
     const tm = tally(e => e.pred && e.pred.bet);
     const lean = tally(e => e.pred && e.pred.side);
+    const roadT = tally(e => e.road && e.road.side);
     const line = (name, t) => `<tr><td>${name}</td><td class="pos">${t.won}</td><td class="neg">${t.lost}</td><td>${t.push}</td><td>${t.none}</td>
       <td><b>${t.won + t.lost ? pct(t.won / (t.won + t.lost), 0) : '–'}</b></td></tr>`;
     const summary = `<table class="log-sum"><tr><th>Out of ${rows.length} hands</th><th>Won</th><th>Lost</th><th>Push</th><th>No pick</th><th>Win rate</th></tr>
-      ${line('Recommended bets', tm)}${line('Model lean (not a bet)', lean)}</table>
+      ${line('Recommended bets', tm)}${line('Model forecast', lean)}${line('Roadmap forecast', roadT)}</table>
       <p class="note">Joined and replayed hands are not scored. Push = Tie (bet returned). Win rate = won ÷ (won + lost).</p>`;
     const verdict = (side, result) => !side ? '' : result === 'T' ? '<span class="muted">push</span>'
       : side === result ? '<span class="mark-ok" title="won">✓</span>' : '<span class="mark-bad" title="lost">✗</span>';
-    $('logView').innerHTML = summary + `<table><tr><th>Shoe · hand</th><th>Result</th><th>Forecast</th><th>Cards P | B</th></tr>
+    $('logView').innerHTML = summary + `<table><tr><th>Shoe · hand</th><th>Result</th><th>Model</th><th>Roadmap</th><th>Cards P | B</th></tr>
       ${rows.map(e => `<tr>
         <td>${e.shoe} · ${e.hand}${e.joined ? ' <small class="muted" title="Already on the roadmap when the app started watching">before you joined</small>'
           : e.replay ? ' <small class="muted" title="Already visible when detected, re-read, or corrected: not scored">unscored</small>' : ''}</td>
         <td><span class="res ${e.result}">${e.result}</span></td>
         <td>${!e.joined && !e.replay && e.pred ? `<span class="res ${e.pred.side}">${e.pred.side}</span> ${verdict(e.pred.side, e.result)} <small class="muted">${pct(e.pred.conf, 0)}${e.pred.sure ? ' ★' : ''}</small>` : '–'}</td>
+        <td>${!e.joined && !e.replay && e.road ? `<span class="res ${e.road.side}" title="${(e.road.reason || '').replace(/"/g, '')}">${e.road.side}</span> ${verdict(e.road.side, e.result)}` : '–'}</td>
         <td class="muted">${e.cards ? `${e.cards.P.join(' ')} | ${e.cards.B.join(' ')}`
           : e.noCards ? `<small class="muted" title="Why this hand's cards were not counted">${e.noCards}</small>` : '–'}</td></tr>`).join('')}
     </table>`;

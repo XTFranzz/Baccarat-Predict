@@ -363,24 +363,125 @@
 
   // What a roadmap player would bet: ride a streak, follow a ping-pong, repeat a column pattern,
   // or follow the derived roads. Returns { side, reason } (side null when the roadmap is too short).
+  // Every pattern a roadmap player looks for, found generally rather than from a fixed list:
+  //  - column cycles: the Big Road column lengths repeat with any period of 1-6 columns
+  //    (3P 3B, 4B 4P, 4B 1P, 2B 1P 3B 1P ...),
+  //  - result cycles: the results themselves repeat with any period of 2-8 hands (BBP BBP, BPPB BPPB ...),
+  //  - staircases: each column one longer (1-2-3-4) or one shorter (4-3-2) than the one before.
+  // A cycle counts once it has repeated at least twice. Candidates are ranked by how much history they
+  // match; the best one is returned with the side it calls next.
+  function findPatterns(h) {
+    const n = noTies(h), cols = bigRoadCols(h), out = [];
+    if (cols.length >= 2) {
+      const done = cols.slice(0, -1), cur = cols[cols.length - 1];
+      const opp = s => (s === 'B' ? 'P' : 'B');
+      // column cycles
+      for (let p = 1; p <= 6; p++) {
+        if (done.length < 2 * p) continue;
+        let k = 0;
+        for (let i = done.length - 1; i - p >= 0 && done[i].len === done[i - p].len; i--) k++;
+        if (k < p) continue;
+        const expected = done[done.length - p].len;
+        const shape = (p === 1 ? done.slice(-2) : done.slice(-p)).map(c => c.len + c.side).join(' ');
+        out.push({ kind: 'columns', period: p, support: k + p, repeats: Math.floor((k + p) / p), shape, expected, current: cur.len,
+          broke: cur.len > expected, side: cur.len < expected ? cur.side : opp(cur.side) });
+      }
+      // staircases over the last 3+ completed columns
+      for (const step of [1, -1]) {
+        let k = 0;
+        for (let i = done.length - 1; i >= 1 && done[i].len - done[i - 1].len === step; i--) k++;
+        if (k >= 2) {
+          const expected = done[done.length - 1].len + step;
+          if (expected >= 1) out.push({ kind: 'staircase', support: k + 1, repeats: k + 1,
+            shape: done.slice(-(k + 1)).map(c => c.len).join('-') + (step > 0 ? ' (growing)' : ' (shrinking)'),
+            expected, current: cur.len, broke: cur.len > expected, side: cur.len < expected ? cur.side : opp(cur.side) });
+        }
+      }
+    }
+    // result cycles (period 2-8), read hand by hand
+    for (let q = 2; q <= 8; q++) {
+      if (n.length < 2 * q) continue;
+      let k = 0;
+      for (let i = n.length - 1; i - q >= 0 && n[i] === n[i - q]; i--) k++;
+      if (k < q) continue;
+      const block = n.slice(-q);
+      if (block.every(x => x === block[0])) continue;   // one side only = a streak, handled by the streak rules
+      out.push({ kind: 'results', period: q, support: k + q, repeats: Math.floor((k + q) / q), shape: n.slice(-q).join(''),
+        side: n[n.length - q], broke: false });
+    }
+    // strongest first: repeated most often; on a tie column patterns before staircases before result cycles,
+    // then the shorter (simpler) pattern
+    const rank = { columns: 0, staircase: 1, results: 2 };
+    out.sort((a, b) => b.repeats - a.repeats || rank[a.kind] - rank[b.kind] || (a.period || 0) - (b.period || 0));
+    return out;
+  }
+  function columnPattern(h) {
+    const all = findPatterns(h).filter(x => x.kind !== 'results');
+    return all.find(x => !x.broke) || all[0] || null;
+  }
+
+  // What a roadmap player would bet: ride a streak, follow a ping-pong, repeat a column pattern,
+  // or follow the derived roads. Returns { side, reason } (side null when the roadmap is too short).
+  // Repeating column shapes on the Big Road: equal columns (3P 3B 3P, 4B 4P 4B), two-column cycles
+  // (4B 1P 4B 1P, 2B 1P 2B 1P) and three-column cycles. A pattern counts once it has repeated at least
+  // twice; the strongest (longest matching) one wins. Returns the expected length of the current column.
+  function columnPattern(h) {
+    const cols = bigRoadCols(h);
+    if (cols.length < 3) return null;
+    const done = cols.slice(0, -1), cur = cols[cols.length - 1];
+    let best = null;
+    for (let p = 1; p <= 3; p++) {
+      if (done.length < 2 * p) continue;
+      let k = 0;
+      for (let i = done.length - 1; i - p >= 0 && done[i].len === done[i - p].len; i--) k++;
+      if (k < p) continue;                     // needs two full cycles
+      if (!best || k > best.k) best = { p, k };
+    }
+    if (!best) return null;
+    const period = done.slice(done.length - best.p);
+    const shape = best.p === 1 ? `${period[0].len}${done[done.length - 2].side} ${period[0].len}${period[0].side}`
+      : period.map(c => c.len + c.side).join(' ');
+    const expected = done[done.length - best.p].len;
+    return { period: best.p, repeats: Math.floor((best.k + best.p) / best.p), shape, expected, current: cur.len, side: cur.side, broke: cur.len > expected };
+  }
+
+  // What a roadmap player would bet: follow a repeating column pattern, expect a streak to stop where this
+  // shoe's streaks stop, ride a streak, follow a ping-pong, or follow the derived roads.
+  // Returns { side, reason, pattern } (side null when the roadmap is too short).
   function roadmapPick(h) {
     const n = noTies(h);
     if (n.length < 2) return { side: null, reason: 'Not enough results yet' };
     const r = runsNow(h), last = n[n.length - 1], other = last === 'B' ? 'P' : 'B';
     const name = s => (s === 'B' ? 'Banker' : 'Player');
-    if (r.run >= 3) return { side: last, reason: `${name(last)} streak of ${r.run}: ride the streak` };
-    if (r.alt >= 3) return { side: other, reason: `Ping-pong of ${r.alt}: follow the chop` };
-    const col = STRATEGIES.pattern.pick(h);
-    const cols = bigRoadCols(h);
-    if (col && cols.length >= 3 && cols[cols.length - 2].len === cols[cols.length - 3].len)
-      return { side: col, reason: `Big Road columns repeat (${cols[cols.length - 3].len}-${cols[cols.length - 2].len}): follow the pattern` };
+    const opp = s => (s === 'B' ? 'P' : 'B');
+    const all = findPatterns(h);
+    const live = all.filter(x => !x.broke), broken = all.find(x => x.broke && x.kind !== 'results');
+    const pat = live[0] || null;
+    let note = '';
+    if (pat) {
+      const cur = bigRoadCols(h).slice(-1)[0];
+      if (pat.kind === 'results')
+        return { side: pat.side, pattern: pat, reason: `Pattern ${pat.shape} repeating (seen ${pat.repeats} times): next in the cycle is ${name(pat.side)}` };
+      const label = pat.kind === 'staircase' ? `Staircase ${pat.shape}` : `Pattern ${pat.shape} (seen ${pat.repeats} times)`;
+      return pat.current < pat.expected
+        ? { side: pat.side, pattern: pat, reason: `${label}: this ${name(cur.side)} column should reach ${pat.expected}, now ${pat.current}, so continue` }
+        : { side: pat.side, pattern: pat, reason: `${label}: this ${name(cur.side)} column has reached ${pat.expected}, so switch` };
+    }
+    if (broken) note = `The ${broken.shape} pattern broke (column reached ${broken.current}, expected ${broken.expected}). `;
+    // This shoe's streak limit: completed streaks keep stopping at the same length.
+    const cols = bigRoadCols(h), done = cols.slice(0, -1);
+    const maxRun = done.reduce((m, c) => Math.max(m, c.len), 0);
+    if (done.length >= 4 && maxRun >= 3 && r.run >= maxRun)
+      return { side: other, pattern: pat, reason: `${note}Streaks this shoe have stopped by ${maxRun}; this ${name(last)} streak is at ${r.run}, so expect a break` };
+    if (r.run >= 3) return { side: last, pattern: pat, reason: `${note}${name(last)} streak of ${r.run}: ride the streak` };
+    if (r.alt >= 3) return { side: other, pattern: pat, reason: `${note}Ping-pong of ${r.alt}: follow the chop` };
     const reds = x => derivedAsk(h, x).filter(v => v === 'R').length;
     const rb = reds('B'), rp = reds('P');
-    if (rb !== rp) return { side: rb > rp ? 'B' : 'P', reason: `Derived roads stay red if ${name(rb > rp ? 'B' : 'P')} wins` };
-    return { side: last, reason: `No clear pattern: follow the last winner` };
+    if (rb !== rp) return { side: rb > rp ? 'B' : 'P', pattern: pat, reason: `${note}Derived roads stay red if ${name(rb > rp ? 'B' : 'P')} wins` };
+    return { side: last, pattern: pat, reason: `${note}No clear pattern: follow the last winner` };
   }
 
-  root.Baccarat = { roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, dealShoeHands, payout, STRATEGIES, backtest,
+  root.Baccarat = { findPatterns, columnPattern, roadmapPick, runStats, runsNow, derivedRoad, derivedAsk, RANKS, rankValue, fullCounts, probsFromCounts, validateHand, resolve, bankerDraws, mulberry32, newShoe, playHand, dealShoe, dealShoeHands, payout, STRATEGIES, backtest,
     simulateStrategies, conditionalNext, bigRoadCols, streakLen, noTies };
   if (typeof module !== 'undefined') module.exports = root.Baccarat;
 })(typeof window !== 'undefined' ? window : globalThis);
